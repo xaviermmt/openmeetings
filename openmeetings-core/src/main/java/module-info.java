@@ -16,14 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.openmeetings;
+module apache.openmeetings.core {
+	requires transitive apache.openmeetings.db;
 
-import org.junit.Test;
+	requires transitive org.apache.commons.io;
 
-public class TestConnection {
+	requires transitive spring.context;
 
-	@Test
-	public void testNoop() {
-		//no-op
-	}
+	requires kurento.client;
+	requires kurento.commons;
+	requires kurento.jsonrpc.client;
+	requires java.activation;
+	requires com.google.gson;
+	requires java.mail;
+	requires api.all;
+	requires org.apache.tika.parsers;
+	requires java.xml;
+	requires xstream;
+
+	requires jodconverter.core;
+	requires jodconverter.local;
 }

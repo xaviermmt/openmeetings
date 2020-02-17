@@ -91,7 +91,7 @@
 		<h2.version>1.4.200</h2.version>
 		<commons-lang3.version>3.9</commons-lang3.version>
 		<javax.mail.version>1.6.2</javax.mail.version>
-		<openjpa.version>3.1.0</openjpa.version>
+		<openjpa.version>3.1.1-SNAPSHOT</openjpa.version>
 		<asterisk-java.version>2.0.2</asterisk-java.version>
 		<commons-dbcp.version>2.7.0</commons-dbcp.version>
 		<commons-pool2.version>2.8.0</commons-pool2.version>
@@ -658,6 +658,10 @@
 						<groupId>xerces</groupId>
 						<artifactId>xercesImpl</artifactId>
 					</exclusion>
+					<exclusion>
+						<groupId>com.sun.activation</groupId>
+						<artifactId>jakarta.activation</artifactId>
+					</exclusion>
 				</exclusions>
 			</dependency>
 			<dependency>
@@ -698,7 +702,7 @@
 			<dependency>
 				<groupId>org.jodconverter</groupId>
 				<artifactId>jodconverter-local</artifactId>
-				<version>4.2.4</version>
+				<version>4.3.0-SNAPSHOT</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
