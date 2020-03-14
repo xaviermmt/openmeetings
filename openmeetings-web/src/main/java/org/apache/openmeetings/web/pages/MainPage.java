@@ -35,7 +35,7 @@ import org.apache.wicket.request.IRequestParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@AuthorizeInstantiation({"Admin", "Dashboard", "Room"})
+@AuthorizeInstantiation({"ADMIN", "DASHBOARD", "ROOM"})
 public class MainPage extends BaseInitedPage {
 	private static final long serialVersionUID = 1L;
 	private static final Logger log = LoggerFactory.getLogger(MainPage.class);
@@ -80,13 +80,18 @@ public class MainPage extends BaseInitedPage {
 
 	public MainPage() {
 		super();
-		getHeader().setVisible(false);
-		add(mainContainer.add(new EmptyPanel(MAIN_PANEL_ID)).setOutputMarkupId(true));
-		add(delayedLoad);
 	}
 
 	public void updateContents(OmUrlFragment f, IPartialPageRequestHandler handler) {
 		main.updateContents(f, handler);
+	}
+
+	@Override
+	protected void onInitialize() {
+		super.onInitialize();
+		getHeader().setVisible(false);
+		add(mainContainer.add(new EmptyPanel(MAIN_PANEL_ID)).setOutputMarkupId(true));
+		add(delayedLoad);
 	}
 
 	@Override

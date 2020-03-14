@@ -34,11 +34,11 @@ body.no-menu {
 	--actions-height: 40px;
 }
 .recording-panel {
-	--info-height: 115px;
+	--info-height: 125px;
 }
-.file.tree {
+.file-tree {
 	--tree-header-height: 36px;
-	--tree-footer-height: 40px;
+	--tree-footer-height: 80px;
 }
 .main.room {
 	--header-height: 0px;
@@ -51,8 +51,9 @@ body.no-menu {
 	--activities-height: 20px;
 	--vdialog-titlebar-height: 27px;
 	--vdialog-footer-height: 0px;
+	--wb-zoom-height: 33px;
 }
-.main.room.interview {
+.main.room.INTERVIEW {
 	--rec-btn-height: 40px;
 }
 .main.room.no-menu {

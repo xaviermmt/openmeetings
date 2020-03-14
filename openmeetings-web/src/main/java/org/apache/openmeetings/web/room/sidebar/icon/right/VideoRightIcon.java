@@ -24,7 +24,7 @@ public class VideoRightIcon extends RoomRightIcon {
 	private static final long serialVersionUID = 1L;
 
 	public VideoRightIcon(String id, String uid) {
-		super(id, uid, Right.video);
+		super(id, uid, Right.VIDEO);
 		mainCssClass = "right camera ";
 	}
 

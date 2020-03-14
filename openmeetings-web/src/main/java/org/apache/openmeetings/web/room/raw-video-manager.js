@@ -105,7 +105,7 @@ var VideoManager = (function() {
 			if (msg instanceof Blob) {
 				return; //ping
 			}
-			const m = jQuery.parseJSON(msg);
+			const m = JSON.parse(msg);
 			if (!m) {
 				return;
 			}
@@ -128,7 +128,7 @@ var VideoManager = (function() {
 	function _init() {
 		Wicket.Event.subscribe('/websocket/message', _onWsMessage);
 		VideoSettings.init(Room.getOptions());
-		share = $('.room-block .container').find('.icon.shared.ui-button');
+		share = $('.room-block .room-container').find('.icon.shared.ui-button');
 		inited = true;
 	}
 	function _update(c) {
@@ -223,7 +223,7 @@ var VideoManager = (function() {
 		return $(VID_SEL + ' div[data-client-uid="' + uid + '"][data-client-type="WEBCAM"]');
 	}
 	function _userSpeaks(uid, active) {
-		const u = $('#user' + uid + ' .audio-activity.ui-icon')
+		const u = $('#user' + uid + ' .audio-activity')
 			, v = _find(uid).parent();
 		if (active) {
 			u.addClass('speaking');

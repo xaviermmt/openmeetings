@@ -6,38 +6,25 @@ var Room = (function() {
 	function _init(_options) {
 		options = _options;
 		window.WbArea = options.interview ? InterviewWbArea() : DrawWbArea();
-		const menu = $('.room-block .container .menu');
+		const menu = $('.room-block .room-container .menu');
 		activities = $('#activities');
 		sb = $('.room-block .sidebar');
-		_sbAddResizable();
-		dock = sb.find('.btn-dock').button({
-			icon: "ui-icon icon-undock"
-			, showLabel: false
-		}).click(function() {
+		dock = sb.find('.btn-dock').click(function() {
 			const offset = parseInt(sb.css(sbSide));
 			if (offset < 0) {
 				sb.removeClass('closed');
 			}
-			dock.button('option', 'disabled', true);
+			dock.prop('disabled', true);
 			const props = {};
 			props[sbSide] = offset < 0 ? '0px' : (-sb.width() + 45) + 'px';
 			sb.animate(props, 1500
 				, function() {
-					dock.button('option', 'disabled', false)
-						.button('option', 'icon', 'ui-icon ' + (offset < 0 ? 'icon-undock' : 'icon-dock'));
-					if (offset < 0) {
-						dock.attr('title', dock.data('ttl-undock'));
-						_sbAddResizable();
-					} else {
-						dock.attr('title', dock.data('ttl-dock'));
-						sb.addClass('closed').resizable('destroy');
-					}
+					dock.prop('disabled', false);
+					__dockSetMode(offset < 0);
 					_setSize();
 				});
 		});
-		dock.addClass(Settings.isRtl ? 'align-left' : 'align-right').attr('title', dock.data('ttl-undock'))
-			.button('option', 'label', dock.data('ttl-undock'))
-			.button('refresh');
+		__dockSetMode(true);
 		menuHeight = menu.length === 0 ? 0 : menu.height();
 		VideoManager.init();
 		if (typeof(Activities) !== 'undefined') {
@@ -45,6 +32,20 @@ var Room = (function() {
 		}
 		Sharer.init();
 		_setSize();
+	}
+	function __dockSetMode(mode) {
+		const icon = dock.find('i').removeClass('icon-dock icon-undock');
+		if (mode) {
+			icon.addClass('icon-undock');
+			dock.attr('title', dock.data('ttl-undock'))
+				.find('.sr-only').text(dock.data('ttl-undock'));
+			_sbAddResizable();
+		} else {
+			icon.addClass('icon-dock');
+			dock.attr('title', dock.data('ttl-dock'))
+				.find('.sr-only').text(dock.data('ttl-dock'));
+			sb.addClass('closed').resizable('destroy');
+		}
 	}
 	function _getSelfAudioClient() {
 		const vw = $('#video' + Room.getOptions().uid);
@@ -126,20 +127,10 @@ var Room = (function() {
 		_unload();
 		$(".room-block").remove();
 		$("#chatPanel").remove();
-		const dlg = $('#disconnected-dlg');
-		dlg.dialog({
-			modal: true
-			, close: _reload
-			, buttons: [
-				{
-					text: dlg.data('reload')
-					, icons: {primary: "ui-icon-refresh"}
-					, click: function() {
-						$(this).dialog("close");
-					}
-				}
-			]
-		});
+		$('#disconnected-dlg')
+			.modal('show')
+			.off('hide.bs.modal')
+			.on('hide.bs.modal', _reload);
 	}
 	function _sbAddResizable() {
 		sb.resizable({
@@ -170,10 +161,6 @@ var Room = (function() {
 		}
 		if (typeof(VideoManager) === 'object') {
 			VideoManager.destroy();
-		}
-		const _qconf = $('#quick-confirmation');
-		if (_qconf.dialog('instance')) {
-			_qconf.dialog('destroy');
 		}
 		$('.ui-dialog.user-video').remove();
 		$(window).off('keyup.openmeetings');
@@ -210,34 +197,20 @@ var Room = (function() {
 		return false;
 	}
 	function _setQuickPollRights() {
-		const close = $('#quick-vote .close');
+		const close = $('#quick-vote .close-btn');
 		if (close.length === 1) {
-			close.off();
-			if (_hasRight(['superModerator', 'moderator', 'presenter'])) {
-				close.show().click(function() {
-					const _qconf = $('#quick-confirmation');
-					_qconf.dialog({
-						resizable: false
-						, height: "auto"
-						, width: 400
-						, modal: true
-						, buttons: [
-							{
-								text: _qconf.data('btn-ok')
-								, click: function() {
-									quickPollAction('close');
-									$(this).dialog('close');
-								}
-							}
-							, {
-								text: _qconf.data('btn-cancel')
-								, click: function() {
-									$(this).dialog('close');
-								}
-							}
-						]
+			if (_hasRight(['SUPER_MODERATOR', 'MODERATOR', 'PRESENTER'])) {
+				close.show();
+				if (typeof(close.data('bs.confirmation')) === 'object') {
+					return;
+				}
+				close
+					.confirmation({
+						confirmationEvent: 'bla'
+						, onConfirm: function() {
+							quickPollAction('close');
+						}
 					});
-				});
 			} else {
 				close.hide();
 			}
@@ -336,7 +309,7 @@ function sipKeyUp(evt) {
 	}
 }
 function typingActivity(uid, active) {
-	const u = $('#user' + uid + ' .typing-activity.ui-icon');
+	const u = $('#user' + uid + ' .typing-activity');
 	if (active) {
 		u.addClass("typing");
 	} else {

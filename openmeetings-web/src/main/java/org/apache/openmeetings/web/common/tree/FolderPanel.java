@@ -79,11 +79,11 @@ public class FolderPanel extends Panel implements IDraggableListener, IDroppable
 		final BaseFileItem f = (BaseFileItem)getDefaultModelObject();
 		boolean editable = treePanel.isEditable() && !f.isReadOnly();
 		final String selector = JQueryWidget.getSelector(this);
-		if (f.getType() == Type.Folder && editable) {
+		if (f.getType() == Type.FOLDER && editable) {
 			add(new DroppableBehavior(
 					selector
 					, new Options()
-						.set("hoverClass", Options.asString("ui-state-hover"))
+						.set("hoverClass", Options.asString("bg-light"))
 						.set("accept", Options.asString(getDefaultModelObject() instanceof Recording ? ".recorditem" : ".fileitem"))
 					, this));
 		}
@@ -91,9 +91,9 @@ public class FolderPanel extends Panel implements IDraggableListener, IDroppable
 			add(new DraggableBehavior(
 					selector
 					, new Options()
-						.set("revert", "treeRevert")
+						.set("revert", "OmFileTree.treeRevert")
 						.set("cursor", Options.asString("move"))
-						.set("helper", "dragHelper")
+						.set("helper", "OmFileTree.dragHelper")
 						.set("cursorAt", "{left: 40, top: 18}")
 						.set("containment", Options.asString(treePanel.getContainment()))
 					, this));
@@ -171,7 +171,7 @@ public class FolderPanel extends Panel implements IDraggableListener, IDroppable
 			ctrl = o.optBoolean(PARAM_CTRL);
 		}
 		treePanel.select(f, target, shift, ctrl);
-		if (Type.Folder == f.getType() && treePanel.tree.getState(f) == State.COLLAPSED) {
+		if (Type.FOLDER == f.getType() && treePanel.tree.getState(f) == State.COLLAPSED) {
 			treePanel.tree.expand(f);
 		} else {
 			treePanel.update(target, f);
@@ -185,24 +185,24 @@ public class FolderPanel extends Panel implements IDraggableListener, IDroppable
 		if (f.getId() == null) {
 			style.append(CSS_CLASS_FILE).append(f.getHash().indexOf("my") > -1 ? "my " : "public ");
 		} else {
-			if (!f.exists()) {
+			if (BaseFileItem.Type.FOLDER != f.getType() && !f.exists()) {
 				style.append("broken ");
 			}
 			switch(f.getType()) {
-				case Folder:
+				case FOLDER:
 					style.append(CSS_CLASS_FILE).append(open ? "folder-open " : "folder ");
 					break;
-				case Image:
+				case IMAGE:
 					style.append(CSS_CLASS_FILE).append("image ");
 					break;
-				case PollChart:
+				case POLL_CHART:
 					style.append(CSS_CLASS_FILE).append("chart ");
 					break;
-				case WmlFile:
+				case WML_FILE:
 					style.append(CSS_CLASS_FILE).append("wml ");
 					break;
-				case Video:
-				case Recording:
+				case VIDEO:
+				case RECORDING:
 				{
 					style.append("recording ");
 					if (f instanceof Recording) {
@@ -213,7 +213,7 @@ public class FolderPanel extends Panel implements IDraggableListener, IDroppable
 					}
 				}
 					break;
-				case Presentation:
+				case PRESENTATION:
 					style.append(CSS_CLASS_FILE).append("doc ");
 					break;
 				default:
@@ -221,7 +221,7 @@ public class FolderPanel extends Panel implements IDraggableListener, IDroppable
 			}
 		}
 		if (treePanel.isSelected(f)) {
-			style.append("ui-state-active ");
+			style.append("active ");
 		}
 		String cls = f instanceof Recording ? "recorditem " : "fileitem ";
 		style.append(f.isReadOnly() ? "readonlyitem " : cls);

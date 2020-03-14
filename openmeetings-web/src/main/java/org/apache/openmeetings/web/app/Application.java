@@ -21,10 +21,8 @@ package org.apache.openmeetings.web.app;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.CONFIG_EXT_PROCESS_TTL;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.getApplicationName;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.getBaseUrl;
-import static org.apache.openmeetings.util.OpenmeetingsVariables.getContentSecurityPolicy;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.getExtProcessTtl;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.getWicketApplicationName;
-import static org.apache.openmeetings.util.OpenmeetingsVariables.getxFrameOptions;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.isInitComplete;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.setExtProcessTtl;
 import static org.apache.openmeetings.util.OpenmeetingsVariables.setInitComplete;
@@ -38,7 +36,6 @@ import java.io.File;
 import java.net.UnknownHostException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +50,7 @@ import org.apache.openmeetings.db.dao.basic.ConfigurationDao;
 import org.apache.openmeetings.db.dao.calendar.AppointmentDao;
 import org.apache.openmeetings.db.dao.label.LabelDao;
 import org.apache.openmeetings.db.dao.record.RecordingDao;
+import org.apache.openmeetings.db.dao.server.OAuth2Dao;
 import org.apache.openmeetings.db.dao.user.UserDao;
 import org.apache.openmeetings.db.entity.basic.Client;
 import org.apache.openmeetings.db.entity.calendar.Appointment;
@@ -105,11 +103,16 @@ import org.apache.wicket.authroles.authentication.AuthenticatedWebApplication;
 import org.apache.wicket.core.request.handler.BookmarkableListenerRequestHandler;
 import org.apache.wicket.core.request.handler.ListenerRequestHandler;
 import org.apache.wicket.core.request.mapper.MountedMapper;
+import org.apache.wicket.csp.CSPDirective;
+import org.apache.wicket.csp.CSPDirectiveSrcValue;
+import org.apache.wicket.csp.CSPHeaderConfiguration;
+import org.apache.wicket.markup.head.IHeaderResponse;
+import org.apache.wicket.markup.head.filter.FilteringHeaderResponse;
+import org.apache.wicket.markup.html.IHeaderResponseDecorator;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.pageStore.IPageStore;
 import org.apache.wicket.pageStore.SerializingPageStore;
 import org.apache.wicket.protocol.ws.WebSocketAwareCsrfPreventionRequestCycleListener;
-import org.apache.wicket.protocol.ws.api.WebSocketResponse;
 import org.apache.wicket.request.IRequestHandler;
 import org.apache.wicket.request.Response;
 import org.apache.wicket.request.Url;
@@ -132,6 +135,7 @@ import org.wicketstuff.dashboard.web.DashboardContext;
 import org.wicketstuff.dashboard.web.DashboardSettings;
 import org.wicketstuff.datastores.hazelcast.HazelcastDataStore;
 
+import com.googlecode.wicket.jquery.ui.plugins.wysiwyg.settings.WysiwygLibrarySettings;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -140,6 +144,12 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
+
+import de.agilecoders.wicket.core.Bootstrap;
+import de.agilecoders.wicket.core.settings.BootstrapSettings;
+import de.agilecoders.wicket.core.settings.IBootstrapSettings;
+import de.agilecoders.wicket.themes.markup.html.bootswatch.BootswatchTheme;
+import de.agilecoders.wicket.themes.markup.html.bootswatch.BootswatchThemeProvider;
 
 @Component
 public class Application extends AuthenticatedWebApplication implements IApplication {
@@ -152,7 +162,7 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 	private static final Set<String> STRINGS_WITH_APP = new HashSet<>();
 	private static String appName;
 	static {
-		STRINGS_WITH_APP.addAll(Arrays.asList("499", "500", "506", "511", "512", "513", "517", "532", "622", "widget.start.desc"
+		STRINGS_WITH_APP.addAll(List.of("499", "500", "506", "511", "512", "513", "517", "532", "622", "widget.start.desc"
 				, "909", "952", "978", "981", "984", "989", "990", "999", "1151", "1155", "1157", "1158", "1194"));
 	}
 	public static final String HASH_MAPPING = "/hash";
@@ -173,6 +183,8 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 	private ClientManager cm;
 	@Autowired
 	private AppointmentDao appointmentDao;
+	@Autowired
+	private OAuth2Dao oauthDao;
 
 	@Override
 	protected void init() {
@@ -235,21 +247,25 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 		//chain of Resource Loaders, if not found it will search in Wicket's internal
 		//Resource Loader for a the property key
 		getResourceSettings().getStringResourceLoaders().add(0, new LabelResourceLoader());
+		final CSPHeaderConfiguration cspConfig = getCspConfig().strict();
 		getRequestCycleListeners().add(new WebSocketAwareCsrfPreventionRequestCycleListener() {
 			@Override
 			public void onEndRequest(RequestCycle cycle) {
 				Response resp = cycle.getResponse();
-				if (resp instanceof WebResponse && !(resp instanceof WebSocketResponse)) {
+				if (resp instanceof WebResponse) {
 					WebResponse wresp = (WebResponse)resp;
-					wresp.setHeader("X-XSS-Protection", "1; mode=block");
-					wresp.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-					wresp.setHeader("X-Content-Type-Options", "nosniff");
-					Url reqUrl = cycle.getRequest().getUrl();
-					wresp.setHeader("Content-Security-Policy"
-							, String.format("%s; connect-src 'self' %s; frame-src %s;"
-									, getContentSecurityPolicy(), getWsUrl(reqUrl)
-									, getxFrameOptions()
-							));
+					if (wresp.isHeaderSupported()) {
+						wresp.setHeader("X-XSS-Protection", "1; mode=block");
+						wresp.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+						wresp.setHeader("X-Content-Type-Options", "nosniff");
+						/*Url reqUrl = cycle.getRequest().getUrl();
+						wresp.setHeader("Content-Security-Policy"
+								, String.format("%s; connect-src 'self' %s; frame-src %s;"
+										, getContentSecurityPolicy(), getWsUrl(reqUrl)
+										, getxFrameOptions()
+								));
+						*/
+					}
 				}
 			}
 		});
@@ -257,7 +273,18 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 		if (sc != null) {
 			sc.setDefaultMaxSessionIdleTimeout(60 * 1000L); // should be enough, should it be configurable?
 		}
+		getHeaderResponseDecorators().add(new IHeaderResponseDecorator() {
+			@Override
+			public IHeaderResponse decorate(IHeaderResponse response) {
+				return new FilteringHeaderResponse(response);
+			}
+		});
 		super.init();
+		final IBootstrapSettings settings = new BootstrapSettings();
+		settings.setThemeProvider(new BootswatchThemeProvider(BootswatchTheme.Sandstone));//FIXME TODO new SingleThemeProvider(new MaterialDesignTheme())
+		Bootstrap.builder().withBootstrapSettings(settings).install(this);
+		WysiwygLibrarySettings.get().setBootstrapCssReference(null);
+		WysiwygLibrarySettings.get().setBootstrapDropDownJavaScriptReference(null);
 
 		// register some widgets
 		final DashboardContext dashboardContext = getDashboardContext();
@@ -308,6 +335,15 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 			Version.logOMStarted();
 			recordingDao.resetProcessingStatus(); //we are starting so all processing recordings are now errors
 
+			getCspSettings().blocking().disabled(); //FIXME TODO due to `reporting-only enabled`
+			oauthDao.getActive().forEach(oauth -> {
+				if (!Strings.isEmpty(oauth.getIconUrl())) {
+					cspConfig.add(CSPDirective.IMG_SRC, oauth.getIconUrl());
+				}
+			});
+			cspConfig.add(CSPDirective.STYLE_SRC, "https://fonts.googleapis.com/css"); //Roboto font FIXME TODO should this be moved to configs???
+			cspConfig.add(CSPDirective.FONT_SRC, "https://fonts.gstatic.com"); //Roboto font FIXME TODO should this be moved to configs???
+			cspConfig.add(CSPDirective.MEDIA_SRC, CSPDirectiveSrcValue.SELF);
 			setInitComplete(true);
 		} catch (Exception err) {
 			log.error("[appStart]", err);
@@ -336,6 +372,10 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 				return super.mapHandler(requestHandler);
 			}
 		}
+	}
+
+	public CSPHeaderConfiguration getCspConfig() {
+		return getCspSettings().reporting();
 	}
 
 	public static OmAuthenticationStrategy getAuthenticationStrategy() {
@@ -377,7 +417,7 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 
 	public static void kickUser(Client client) {
 		if (client != null) {
-			WebSocketHelper.sendRoom(new TextRoomMessage(client.getRoom().getId(), client, RoomMessage.Type.kick, client.getUid()));
+			WebSocketHelper.sendRoom(new TextRoomMessage(client.getRoom().getId(), client, RoomMessage.Type.KICK, client.getUid()));
 			get().cm.exitRoom(client);
 		}
 	}
@@ -469,7 +509,7 @@ public class Application extends AuthenticatedWebApplication implements IApplica
 			if (r.isAppointment() && i.getInvitedBy().getId().equals(u.getId())) {
 				link = getRoomUrlFragment(r.getId()).getLink();
 			} else {
-				boolean allowed = Type.contact != u.getType() && Type.external != u.getType();
+				boolean allowed = Type.CONTACT != u.getType() && Type.EXTERNAL != u.getType();
 				if (allowed) {
 					allowed = get().isRoomAllowedToUser(r, u);
 				}

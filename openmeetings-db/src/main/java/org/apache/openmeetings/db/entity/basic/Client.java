@@ -22,7 +22,6 @@ import static java.util.UUID.randomUUID;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -133,27 +132,27 @@ public class Client implements IDataProviderEntity, IWsClient {
 	}
 
 	public boolean hasRight(Right right) {
-		if (Right.superModerator == right) {
+		if (Right.SUPER_MODERATOR == right) {
 			return rights.contains(right);
 		}
-		return rights.contains(Right.superModerator) || rights.contains(Right.moderator) || rights.contains(right);
+		return rights.contains(Right.SUPER_MODERATOR) || rights.contains(Right.MODERATOR) || rights.contains(right);
 	}
 
-	public Client allow(Right... _rights) {
-		allow(Arrays.asList(_rights));
+	public Client allow(Right... inRights) {
+		allow(List.of(inRights));
 		return this;
 	}
 
-	public void allow(Iterable<Right> _rights) {
-		for (Right right : _rights) {
+	public void allow(Iterable<Right> inRights) {
+		for (Right right : inRights) {
 			if (!hasRight(right)) {
 				rights.add(right);
 			}
 		}
 	}
 
-	public void deny(Right... _rights) {
-		for (Right right : _rights) {
+	public void deny(Right... inRights) {
+		for (Right right : inRights) {
 			rights.remove(right);
 		}
 	}
@@ -219,22 +218,22 @@ public class Client implements IDataProviderEntity, IWsClient {
 		return this;
 	}
 
-	public StreamDesc addStream(StreamType stype, Activity...activities) {
-		StreamDesc sd = new StreamDesc(stype, activities);
+	public StreamDesc addStream(StreamType stype, Activity...inActivities) {
+		StreamDesc sd = new StreamDesc(stype, inActivities);
 		streams.put(sd.getUid(), sd);
 		return sd;
 	}
 
-	public StreamDesc removeStream(String _uid) {
-		return streams.remove(_uid);
+	public StreamDesc removeStream(String inUid) {
+		return streams.remove(inUid);
 	}
 
 	public List<StreamDesc> getStreams() {
 		return new ArrayList<>(streams.values());
 	}
 
-	public StreamDesc getStream(String _uid) {
-		return streams.get(_uid);
+	public StreamDesc getStream(String inUid) {
+		return streams.get(inUid);
 	}
 
 	public Optional<StreamDesc> getScreenStream() {
@@ -464,13 +463,13 @@ public class Client implements IDataProviderEntity, IWsClient {
 			if (activities == null || activities.length == 0) {
 				setActivities();
 			} else {
-				sactivities.addAll(Arrays.asList(activities));
+				sactivities.addAll(List.of(activities));
 			}
 			if (StreamType.SCREEN == type) {
 				this.swidth = 800;
 				this.sheight = 600;
 			} else if (StreamType.WEBCAM == type) {
-				boolean interview = room != null && Room.Type.interview == room.getType();
+				boolean interview = room != null && Room.Type.INTERVIEW == room.getType();
 				this.swidth = interview ? 320 : width;
 				this.sheight = interview ? 260 : height;
 			}

@@ -24,7 +24,6 @@ import static org.apache.openmeetings.web.app.WebSession.getUserId;
 import static org.apache.openmeetings.web.util.CallbackFunctionHelper.addOnClick;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -47,13 +46,15 @@ import org.apache.wicket.markup.repeater.data.IDataProvider;
 import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
+import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.spring.injection.annot.SpringBean;
 
-import com.googlecode.wicket.jquery.ui.form.button.AjaxButton;
+import de.agilecoders.wicket.core.markup.html.bootstrap.button.BootstrapAjaxButton;
+import de.agilecoders.wicket.core.markup.html.bootstrap.button.Buttons;
 
 public class UserSearchPanel extends UserBasePanel {
 	private static final long serialVersionUID = 1L;
-	private static final List<Integer> itemsPerPage = Arrays.asList(10, 25, 50, 75, 100, 200, 500, 1000, 2500, 5000);
+	private static final List<Integer> itemsPerPage = List.of(10, 25, 50, 75, 100, 200, 500, 1000, 2500, 5000);
 	private final TextField<String> text = new TextField<>("text", Model.of(""));
 	private final TextField<String> search = new TextField<>("search", Model.of(""));
 	private final TextField<String> offer = new TextField<>("offer", Model.of(""));
@@ -78,7 +79,7 @@ public class UserSearchPanel extends UserBasePanel {
 			protected void onInitialize() {
 				super.onInitialize();
 				add(text, offer, search);
-				add(new AjaxButton("submit") {
+				add(new BootstrapAjaxButton("submit", new ResourceModel("714"), Buttons.Type.Outline_Primary) {
 					private static final long serialVersionUID = 1L;
 
 					@Override

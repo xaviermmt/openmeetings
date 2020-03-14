@@ -251,7 +251,7 @@ var Video = (function() {
 			area.append($('<div class="pod"></div>').attr('id', contId));
 			WbArea.updateAreaClass();
 		} else {
-			contSel = '.room-block .container';
+			contSel = '.room-block .room-container';
 		}
 		$(contSel).append(OmUtil.tmpl('#user-video', _id)
 				.attr('title', name)
@@ -440,7 +440,7 @@ var Video = (function() {
 		}
 	}
 	function _setRights() {
-		if (Room.hasRight(['superModerator', 'moderator', 'muteOthers']) && VideoUtil.hasAudio(sd)) {
+		if (Room.hasRight(['SUPER_MODERATOR', 'MODERATOR', 'MUTE_OTHERS']) && VideoUtil.hasAudio(sd)) {
 			muteOthers.addClass('enabled').click(function() {
 				VideoManager.clickMuteOthers(sd.uid);
 			});

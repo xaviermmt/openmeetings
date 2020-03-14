@@ -30,7 +30,6 @@ import static org.apache.openmeetings.web.app.WebSession.getUserId;
 import static org.apache.wicket.validation.validator.StringValidator.minimumLength;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +74,7 @@ import org.slf4j.LoggerFactory;
 import org.wicketstuff.select2.Response;
 import org.wicketstuff.select2.Select2MultiChoice;
 
-import com.googlecode.wicket.jquery.ui.widget.dialog.MessageDialog;
+import de.agilecoders.wicket.core.markup.html.bootstrap.dialog.Modal;
 
 /**
  * CRUD operations in form for {@link User}
@@ -93,7 +92,7 @@ public class UserForm extends AdminBaseForm<User> {
 	private final RequiredTextField<String> login = new RequiredTextField<>("login");
 	private StrongPasswordValidator passValidator;
 	private final PasswordTextField password = new PasswordTextField("password", new Model<String>());
-	private final MessageDialog warning;
+	private final Modal<String> warning;
 	private final DropDownChoice<Long> domainId = new DropDownChoice<>("domainId");
 	private final PasswordDialog adminPass = new PasswordDialog("adminPass");
 	@SpringBean
@@ -105,7 +104,7 @@ public class UserForm extends AdminBaseForm<User> {
 	@SpringBean
 	private OAuth2Dao oauthDao;
 
-	public UserForm(String id, WebMarkupContainer listContainer, final User user, MessageDialog warning) {
+	public UserForm(String id, WebMarkupContainer listContainer, final User user, Modal<String> warning) {
 		super(id, new CompoundPropertyModel<>(user));
 		setOutputMarkupId(true);
 		this.listContainer = listContainer;
@@ -122,7 +121,7 @@ public class UserForm extends AdminBaseForm<User> {
 		login.setLabel(new ResourceModel("108"));
 		mainContainer.add(login.add(minimumLength(getMinLoginLength())));
 
-		mainContainer.add(new DropDownChoice<>("type", Arrays.asList(Type.values())).add(new OnChangeAjaxBehavior() {
+		mainContainer.add(new DropDownChoice<>("type", List.of(Type.values())).add(new OnChangeAjaxBehavior() {
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -155,10 +154,10 @@ public class UserForm extends AdminBaseForm<User> {
 			public void query(String term, int page, Response<Right> response) {
 				boolean isGroupAdmin = hasGroupAdminLevel(getRights());
 				for (Right r : Right.values()) {
-					if (Right.GroupAdmin == r) {
+					if (Right.GROUP_ADMIN == r) {
 						continue;
 					}
-					if (isGroupAdmin && (Right.Admin == r || Right.Soap == r)) {
+					if (isGroupAdmin && (Right.ADMIN == r || Right.SOAP == r)) {
 						continue;
 					}
 					if (Strings.isEmpty(term) || r.name().contains(term)) {
@@ -208,7 +207,7 @@ public class UserForm extends AdminBaseForm<User> {
 	protected void onPurgeSubmit(AjaxRequestTarget target, Form<?> form) {
 		if (isAdminPassRequired()) {
 			adminPass.setAction(this::purgeUser);
-			adminPass.open(target);
+			adminPass.show(target);
 		} else {
 			purgeUser(target);
 		}
@@ -218,7 +217,7 @@ public class UserForm extends AdminBaseForm<User> {
 	protected void onSaveSubmit(AjaxRequestTarget target, Form<?> form) {
 		if (isAdminPassRequired()) {
 			adminPass.setAction((SerializableConsumer<AjaxRequestTarget>)t -> saveUser(t, password.getModelObject()));
-			adminPass.open(target);
+			adminPass.show(target);
 		} else {
 			saveUser(target, password.getConvertedInput());
 		}
@@ -260,7 +259,7 @@ public class UserForm extends AdminBaseForm<User> {
 		}
 		updateForm(target);
 		if (u.getGroupUsers().isEmpty()) {
-			warning.open(target);
+			warning.show(target);
 		}
 	}
 
@@ -298,7 +297,7 @@ public class UserForm extends AdminBaseForm<User> {
 	protected void onDeleteSubmit(AjaxRequestTarget target, Form<?> form) {
 		if (isAdminPassRequired()) {
 			adminPass.setAction(this::deleteUser);
-			adminPass.open(target);
+			adminPass.show(target);
 		} else {
 			deleteUser(target);
 		}
@@ -308,13 +307,13 @@ public class UserForm extends AdminBaseForm<User> {
 		User u = getModelObject();
 		final Map<Long, String> values = new HashMap<>();
 		List<Long> ids = new ArrayList<>();
-		if (u.getType() == Type.ldap) {
+		if (u.getType() == Type.LDAP) {
 			for (LdapConfig c : ldapDao.getActive()) {
 				ids.add(c.getId());
 				values.put(c.getId(), c.getName());
 			}
 		}
-		if (u.getType() == Type.oauth) {
+		if (u.getType() == Type.OAUTH) {
 			for (OAuthServer s : oauthDao.getActive()) {
 				ids.add(s.getId());
 				values.put(s.getId(), s.getName());
@@ -334,7 +333,7 @@ public class UserForm extends AdminBaseForm<User> {
 				return "" + object;
 			}
 		});
-		domain.setVisible(u.getType() == Type.ldap || u.getType() == Type.oauth);
+		domain.setVisible(u.getType() == Type.LDAP || u.getType() == Type.OAUTH);
 		if (target != null) {
 			target.add(domain);
 		}

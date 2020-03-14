@@ -19,6 +19,42 @@
 package org.apache.openmeetings.backup;
 
 import static java.util.UUID.randomUUID;
+import static org.apache.openmeetings.db.bind.Constants.APPOINTMENT_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.APPOINTMENT_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CALENDAR_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CALENDAR_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CFG_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CFG_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CHAT_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CHAT_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CONTACT_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.CONTACT_NODE;
+import static org.apache.openmeetings.db.bind.Constants.FILE_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.FILE_NODE;
+import static org.apache.openmeetings.db.bind.Constants.GROUP_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.GROUP_NODE;
+import static org.apache.openmeetings.db.bind.Constants.MMEMBER_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.MMEMBER_NODE;
+import static org.apache.openmeetings.db.bind.Constants.MSG_FOLDER_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.MSG_FOLDER_NODE;
+import static org.apache.openmeetings.db.bind.Constants.MSG_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.MSG_NODE;
+import static org.apache.openmeetings.db.bind.Constants.OAUTH_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.OAUTH_NODE;
+import static org.apache.openmeetings.db.bind.Constants.POLL_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.POLL_NODE;
+import static org.apache.openmeetings.db.bind.Constants.RECORDING_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.RECORDING_NODE;
+import static org.apache.openmeetings.db.bind.Constants.ROOM_FILE_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.ROOM_FILE_NODE;
+import static org.apache.openmeetings.db.bind.Constants.ROOM_GRP_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.ROOM_GRP_NODE;
+import static org.apache.openmeetings.db.bind.Constants.ROOM_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.ROOM_NODE;
+import static org.apache.openmeetings.db.bind.Constants.USER_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.USER_NODE;
+import static org.apache.openmeetings.db.bind.Constants.VERSION_LIST_NODE;
+import static org.apache.openmeetings.db.bind.Constants.VERSION_NODE;
 import static org.apache.openmeetings.db.entity.user.PrivateMessage.INBOX_FOLDER_ID;
 import static org.apache.openmeetings.db.entity.user.PrivateMessage.SENT_FOLDER_ID;
 import static org.apache.openmeetings.db.entity.user.PrivateMessage.TRASH_FOLDER_ID;
@@ -105,7 +141,6 @@ import static org.apache.openmeetings.util.OpenmeetingsVariables.getMinLoginLeng
 
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -124,24 +159,23 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.stream.StreamSource;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.text.WordUtils;
-import org.apache.openmeetings.backup.converter.AppointmentConverter;
-import org.apache.openmeetings.backup.converter.AppointmentReminderTypeConverter;
-import org.apache.openmeetings.backup.converter.BaseFileItemConverter;
-import org.apache.openmeetings.backup.converter.DateConverter;
-import org.apache.openmeetings.backup.converter.EnumIcaseConverter;
-import org.apache.openmeetings.backup.converter.GroupConverter;
-import org.apache.openmeetings.backup.converter.OmCalendarConverter;
-import org.apache.openmeetings.backup.converter.PollTypeConverter;
-import org.apache.openmeetings.backup.converter.RecordingStatusConverter;
-import org.apache.openmeetings.backup.converter.RoomConverter;
-import org.apache.openmeetings.backup.converter.RoomTypeConverter;
-import org.apache.openmeetings.backup.converter.SalutationConverter;
-import org.apache.openmeetings.backup.converter.UserConverter;
 import org.apache.openmeetings.backup.converter.WbConverter;
 import org.apache.openmeetings.core.converter.DocumentConverter;
+import org.apache.openmeetings.db.bind.adapter.AppointmentAdapter;
+import org.apache.openmeetings.db.bind.adapter.FileAdapter;
+import org.apache.openmeetings.db.bind.adapter.GroupAdapter;
+import org.apache.openmeetings.db.bind.adapter.OmCalendarAdapter;
+import org.apache.openmeetings.db.bind.adapter.RoomAdapter;
+import org.apache.openmeetings.db.bind.adapter.UserAdapter;
 import org.apache.openmeetings.db.dao.basic.ChatDao;
 import org.apache.openmeetings.db.dao.basic.ConfigurationDao;
 import org.apache.openmeetings.db.dao.calendar.AppointmentDao;
@@ -160,7 +194,6 @@ import org.apache.openmeetings.db.dao.user.PrivateMessageFolderDao;
 import org.apache.openmeetings.db.dao.user.UserContactDao;
 import org.apache.openmeetings.db.dao.user.UserDao;
 import org.apache.openmeetings.db.dto.room.Whiteboard;
-import org.apache.openmeetings.db.dto.user.OAuthUser;
 import org.apache.openmeetings.db.entity.basic.ChatMessage;
 import org.apache.openmeetings.db.entity.basic.Configuration;
 import org.apache.openmeetings.db.entity.calendar.Appointment;
@@ -178,28 +211,19 @@ import org.apache.openmeetings.db.entity.room.RoomPoll;
 import org.apache.openmeetings.db.entity.room.RoomPollAnswer;
 import org.apache.openmeetings.db.entity.server.LdapConfig;
 import org.apache.openmeetings.db.entity.server.OAuthServer;
-import org.apache.openmeetings.db.entity.server.OAuthServer.RequestInfoMethod;
 import org.apache.openmeetings.db.entity.user.Group;
 import org.apache.openmeetings.db.entity.user.GroupUser;
 import org.apache.openmeetings.db.entity.user.PrivateMessage;
 import org.apache.openmeetings.db.entity.user.PrivateMessageFolder;
 import org.apache.openmeetings.db.entity.user.User;
-import org.apache.openmeetings.db.entity.user.User.Salutation;
 import org.apache.openmeetings.db.entity.user.UserContact;
 import org.apache.openmeetings.db.util.AuthLevelUtil;
+import org.apache.openmeetings.db.util.XmlHelper;
 import org.apache.openmeetings.util.CalendarPatterns;
 import org.apache.openmeetings.util.OmFileHelper;
 import org.apache.openmeetings.util.StoredFile;
 import org.apache.openmeetings.util.crypt.SCryptImplementation;
 import org.apache.wicket.util.string.Strings;
-import org.simpleframework.xml.Serializer;
-import org.simpleframework.xml.convert.Registry;
-import org.simpleframework.xml.convert.RegistryStrategy;
-import org.simpleframework.xml.core.Persister;
-import org.simpleframework.xml.strategy.Strategy;
-import org.simpleframework.xml.stream.InputNode;
-import org.simpleframework.xml.stream.NodeBuilder;
-import org.simpleframework.xml.transform.RegistryMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -240,6 +264,7 @@ public class BackupImport {
 		outdatedConfigKeys.put("swftools_zoom", CONFIG_DOCUMENT_DPI);
 		outdatedConfigKeys.put("swftools_jpegquality", CONFIG_DOCUMENT_QUALITY);
 		outdatedConfigKeys.put("sms.subject", CONFIG_REMINDER_MESSAGE);
+		outdatedConfigKeys.put("exclusive.audio.keycode", CONFIG_KEYCODE_MUTE_OTHERS);
 		configTypes.put(CONFIG_REGISTER_FRONTEND, Configuration.Type.BOOL);
 		configTypes.put(CONFIG_REGISTER_SOAP, Configuration.Type.BOOL);
 		configTypes.put(CONFIG_REGISTER_OAUTH, Configuration.Type.BOOL);
@@ -363,7 +388,8 @@ public class BackupImport {
 		return f;
 	}
 
-	public void performImport(InputStream is) throws Exception {
+	public void performImport(InputStream is, ProgressHolder progressHolder) throws Exception {
+		progressHolder.setProgress(0);
 		userMap.clear();
 		groupMap.clear();
 		calendarMap.clear();
@@ -378,50 +404,63 @@ public class BackupImport {
 		messageFolderMap.put(TRASH_FOLDER_ID, TRASH_FOLDER_ID);
 
 		File f = unzip(is);
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		RegistryMatcher matcher = new RegistryMatcher();
-		Serializer simpleSerializer = new Persister(strategy, matcher);
 
-		matcher.bind(Long.class, LongTransform.class);
-		registry.bind(Date.class, DateConverter.class);
-
-		BackupVersion ver = getVersion(simpleSerializer, f);
+		BackupVersion ver = getVersion(f);
+		progressHolder.setProgress(2);
 		importConfigs(f);
-		importGroups(f, simpleSerializer);
-		importLdap(f, simpleSerializer);
-		importOauth(f, simpleSerializer);
+		progressHolder.setProgress(7);
+		importGroups(f);
+		progressHolder.setProgress(12);
+		importLdap(f);
+		progressHolder.setProgress(17);
+		importOauth(f);
+		progressHolder.setProgress(22);
 		importUsers(f);
+		progressHolder.setProgress(27);
 		importRooms(f);
+		progressHolder.setProgress(32);
 		importRoomGroups(f);
+		progressHolder.setProgress(37);
 		importChat(f);
+		progressHolder.setProgress(42);
 		importCalendars(f);
+		progressHolder.setProgress(47);
 		importAppointments(f);
+		progressHolder.setProgress(52);
 		importMeetingMembers(f);
+		progressHolder.setProgress(57);
 		importRecordings(f);
-		importPrivateMsgFolders(f, simpleSerializer);
+		progressHolder.setProgress(62);
+		importPrivateMsgFolders(f);
+		progressHolder.setProgress(67);
 		importContacts(f);
+		progressHolder.setProgress(72);
 		importPrivateMsgs(f);
+		progressHolder.setProgress(77);
 		List<FileItem> files = importFiles(f);
+		progressHolder.setProgress(82);
 		importPolls(f);
+		progressHolder.setProgress(87);
 		importRoomFiles(f);
+		progressHolder.setProgress(92);
 
 		log.info("Room files import complete, starting copy of files and folders");
 		/*
 		 * ##################### Import real files and folders
 		 */
 		importFolders(f);
+		progressHolder.setProgress(97);
 
 		if (ver.compareTo(BackupVersion.get("4.0.0")) < 0) {
 			for (BaseFileItem bfi : files) {
 				if (bfi.isDeleted()) {
 					continue;
 				}
-				if (BaseFileItem.Type.Presentation == bfi.getType()) {
+				if (BaseFileItem.Type.PRESENTATION == bfi.getType()) {
 					convertOldPresentation((FileItem)bfi);
-					fileItemDao._update(bfi);
+					fileItemDao.updateBase(bfi);
 				}
-				if (BaseFileItem.Type.WmlFile == bfi.getType()) {
+				if (BaseFileItem.Type.WML_FILE == bfi.getType()) {
 					try {
 						Whiteboard wb = WbConverter.convert((FileItem)bfi);
 						wb.save(bfi.getFile().toPath());
@@ -434,28 +473,19 @@ public class BackupImport {
 		log.info("File explorer item import complete, clearing temp files");
 
 		FileUtils.deleteDirectory(f);
+		progressHolder.setProgress(100);
 	}
 
-	private static BackupVersion getVersion(Serializer ser, File f) {
+	static BackupVersion getVersion(File base) {
 		List<BackupVersion> list = new ArrayList<>(1);
-		readList(ser, f, "version.xml", "version", BackupVersion.class, (node, v) -> list.add(v), true);
+		readList(base, "version.xml", VERSION_LIST_NODE, VERSION_NODE, BackupVersion.class, v -> list.add(v), true);
 		return list.isEmpty() ? new BackupVersion() : list.get(0);
 	}
 
 	/*
 	 * ##################### Import Configs
 	 */
-	private void importConfigs(File f) throws Exception {
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		RegistryMatcher matcher = new RegistryMatcher();
-		Serializer serializer = new Persister(strategy, matcher);
-
-		matcher.bind(Long.class, LongTransform.class);
-		registry.bind(Date.class, DateConverter.class);
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		registry.bind(Configuration.Type.class, new EnumIcaseConverter(Configuration.Type.values()));
-
+	void importConfigs(File base) throws Exception {
 		final Map<Integer, String> keyMap = new HashMap<>();
 		Arrays.stream(KeyEvent.class.getDeclaredFields())
 				.filter(fld -> fld.getName().startsWith("VK_"))
@@ -467,7 +497,12 @@ public class BackupImport {
 					}
 				});
 
-		readList(serializer, f, "configs.xml", "configs", Configuration.class, (node, c) -> {
+		Class<Configuration> eClazz = Configuration.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
+
+		readList(unmarshaller, base, "configs.xml", CFG_LIST_NODE, CFG_NODE, eClazz, c -> {
 			if (c.getKey() == null || c.isDeleted()) {
 				return;
 			}
@@ -513,9 +548,9 @@ public class BackupImport {
 	/*
 	 * ##################### Import Groups
 	 */
-	private void importGroups(File f, Serializer simpleSerializer) {
+	void importGroups(File base) throws Exception {
 		log.info("Configs import complete, starting group import");
-		readList(simpleSerializer, f, "organizations.xml", "organisations", Group.class, (node, g) -> {
+		readList(base, "organizations.xml", GROUP_LIST_NODE, GROUP_NODE, Group.class, g -> {
 			Long oldId = g.getId();
 			g.setId(null);
 			g = groupDao.update(g, null);
@@ -526,10 +561,10 @@ public class BackupImport {
 	/*
 	 * ##################### Import LDAP Configs
 	 */
-	private Long importLdap(File f, Serializer simpleSerializer) {
+	Long importLdap(File base) {
 		log.info("Groups import complete, starting LDAP config import");
 		Long[] defaultLdapId = {cfgDao.getLong(CONFIG_DEFAULT_LDAP_ID, null)};
-		readList(simpleSerializer, f, "ldapconfigs.xml", "ldapconfigs", LdapConfig.class, (node, c) -> {
+		readList(base, "ldapconfigs.xml", "ldapconfigs", "ldapconfig", LdapConfig.class, c -> {
 			if (Strings.isEmpty(c.getName()) || "local DB [internal]".equals(c.getName())) {
 				return;
 			}
@@ -545,38 +580,10 @@ public class BackupImport {
 	/*
 	 * ##################### OAuth2 servers
 	 */
-	private void importOauth(File f, Serializer simpleSerializer) {
+	void importOauth(File base) {
 		log.info("Ldap config import complete, starting OAuth2 server import");
-		readList(simpleSerializer, f, "oauth2servers.xml", "oauth2servers", OAuthServer.class
-				, (node, s) -> {
-					try {
-						InputNode item = node.getNext();
-						do {
-							if (item == null) {
-								break;
-							}
-							String name = item.getName();
-							String val = item.getValue();
-							if ("loginParamName".equals(name) && !Strings.isEmpty(val)) {
-								s.addMapping(OAuthUser.PARAM_LOGIN, val);
-							}
-							if ("emailParamName".equals(name) && !Strings.isEmpty(val)) {
-								s.addMapping(OAuthUser.PARAM_EMAIL, val);
-							}
-							if ("firstnameParamName".equals(name) && !Strings.isEmpty(val)) {
-								s.addMapping(OAuthUser.PARAM_FNAME, val);
-							}
-							if ("lastnameParamName".equals(name) && !Strings.isEmpty(val)) {
-								s.addMapping(OAuthUser.PARAM_LNAME, val);
-							}
-							item = node.getNext(); //HACK to handle old mapping
-						} while (item != null && !"OAuthServer".equals(item.getName()));
-					} catch (Exception e) {
-						log.error("Unexpected error while patching OAuthServer", e);
-					}
-					if (s.getRequestInfoMethod() == null) {
-						s.setRequestInfoMethod(RequestInfoMethod.GET);
-					}
+		readList(base, "oauth2servers.xml", OAUTH_LIST_NODE, OAUTH_NODE, OAuthServer.class
+				, s -> {
 					s.setId(null);
 					auth2Dao.update(s, null);
 				}, false);
@@ -585,34 +592,32 @@ public class BackupImport {
 	/*
 	 * ##################### Import Users
 	 */
-	private void importUsers(File f) throws Exception {
+	void importUsers(File base) throws Exception {
 		log.info("OAuth2 servers import complete, starting user import");
 		String jNameTimeZone = getDefaultTimezone();
-		//add existence email from database
+		//add existent emails from database
 		List<User>  users = userDao.getAllUsers();
 		final Map<String, Integer> userEmailMap = new HashMap<>();
 		final Map<String, Integer> userLoginMap = new HashMap<>();
 		for (User u : users){
-			if (u.getAddress() == null || u.getAddress().getEmail() == null || User.Type.user != u.getType()) {
+			if (u.getAddress() == null || u.getAddress().getEmail() == null || User.Type.USER != u.getType()) {
 				continue;
 			}
 			userEmailMap.put(u.getAddress().getEmail(), Integer.valueOf(-1));
 			userLoginMap.put(u.getLogin(), Integer.valueOf(-1));
 		}
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer ser = new Persister(strategy);
-
-		registry.bind(Group.class, new GroupConverter(groupDao, groupMap));
-		registry.bind(Salutation.class, SalutationConverter.class);
-		registry.bind(Date.class, DateConverter.class);
+		Class<User> eClazz = User.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new GroupAdapter(groupDao, groupMap));
 		int minLoginLength = getMinLoginLength();
-		readList(ser, f, "users.xml", "users", User.class, (node, u) -> {
+
+		readList(unmarshaller, base, "users.xml", USER_LIST_NODE, USER_NODE, eClazz, u -> {
 			if (u.getLogin() == null || u.isDeleted()) {
 				return;
 			}
 			// check that email is unique
-			if (u.getAddress() != null && u.getAddress().getEmail() != null && User.Type.user == u.getType()) {
+			if (u.getAddress() != null && u.getAddress().getEmail() != null && User.Type.USER == u.getType()) {
 				if (userEmailMap.containsKey(u.getAddress().getEmail())) {
 					log.warn("Email is duplicated for user {}", u);
 					String updateEmail = String.format("modified_by_import_<%s>%s", randomUUID(), u.getAddress().getEmail());
@@ -621,17 +626,22 @@ public class BackupImport {
 				userEmailMap.put(u.getAddress().getEmail(), Integer.valueOf(userEmailMap.size()));
 			}
 			if (userLoginMap.containsKey(u.getLogin())) {
-				log.warn("Login is duplicated for user {}", u);
+				log.warn("LOGIN is duplicated for USER {}", u);
 				String updateLogin = String.format("modified_by_import_<%s>%s", randomUUID(), u.getLogin());
 				u.setLogin(updateLogin);
 			}
 			userLoginMap.put(u.getLogin(), Integer.valueOf(userLoginMap.size()));
 			if (u.getGroupUsers() != null) {
-				for (GroupUser gu : u.getGroupUsers()) {
+				for (Iterator<GroupUser> iter = u.getGroupUsers().iterator(); iter.hasNext();) {
+					GroupUser gu = iter.next();
+					if (gu.getGroup().getId() == null) {
+						iter.remove();
+						continue;
+					}
 					gu.setUser(u);
 				}
 			}
-			if (u.getType() == User.Type.contact && u.getLogin().length() < minLoginLength) {
+			if (u.getType() == User.Type.CONTACT && u.getLogin().length() < minLoginLength) {
 				u.setLogin(randomUUID().toString());
 			}
 
@@ -659,19 +669,14 @@ public class BackupImport {
 	/*
 	 * ##################### Import Rooms
 	 */
-	private void importRooms(File f) throws Exception {
+	void importRooms(File base) throws Exception {
 		log.info("Users import complete, starting room import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		RegistryMatcher matcher = new RegistryMatcher();
-		Serializer ser = new Persister(strategy, matcher);
+		Class<Room> eClazz = Room.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
 
-		matcher.bind(Long.class, LongTransform.class);
-		matcher.bind(Integer.class, IntegerTransform.class);
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		registry.bind(Room.Type.class, RoomTypeConverter.class);
-		registry.bind(Date.class, DateConverter.class);
-		readList(ser, f, "rooms.xml", "rooms", Room.class, (node, r) -> {
+		readList(unmarshaller, base, "rooms.xml", ROOM_LIST_NODE, ROOM_NODE, eClazz, r -> {
 			Long roomId = r.getId();
 
 			// We need to reset ids as openJPA reject to store them otherwise
@@ -692,26 +697,25 @@ public class BackupImport {
 	/*
 	 * ##################### Import Room Groups
 	 */
-	private void importRoomGroups(File f) throws Exception {
+	void importRoomGroups(File base) throws Exception {
 		log.info("Room import complete, starting room groups import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer serializer = new Persister(strategy);
+		Class<RoomGroup> eClazz = RoomGroup.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new RoomAdapter(roomDao, roomMap));
+		unmarshaller.setAdapter(new GroupAdapter(groupDao, groupMap));
 
-		registry.bind(Group.class, new GroupConverter(groupDao, groupMap));
-		registry.bind(Room.class, new RoomConverter(roomDao, roomMap));
-
-		readList(serializer, f, "rooms_organisation.xml", "room_organisations", RoomGroup.class, (node, ro) -> {
-			Room r = roomDao.get(ro.getRoom().getId());
-			if (r == null || ro.getGroup() == null || ro.getGroup().getId() == null) {
+		readList(unmarshaller, base, "rooms_organisation.xml", ROOM_GRP_LIST_NODE, ROOM_GRP_NODE, eClazz, rg -> {
+			Room r = roomDao.get(rg.getRoom().getId());
+			if (r == null || rg.getGroup().getId() == null) {
 				return;
 			}
 			if (r.getGroups() == null) {
 				r.setGroups(new ArrayList<>());
 			}
-			ro.setId(null);
-			ro.setRoom(r);
-			r.getGroups().add(ro);
+			rg.setId(null);
+			rg.setRoom(r);
+			r.getGroups().add(rg);
 			roomDao.update(r, null);
 		});
 	}
@@ -719,20 +723,17 @@ public class BackupImport {
 	/*
 	 * ##################### Import Chat messages
 	 */
-	private void importChat(File f) throws Exception {
+	void importChat(File base) throws Exception {
 		log.info("Room groups import complete, starting chat messages import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer serializer = new Persister(strategy);
+		Class<ChatMessage> eClazz = ChatMessage.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
+		unmarshaller.setAdapter(new RoomAdapter(roomDao, roomMap));
 
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		registry.bind(Room.class, new RoomConverter(roomDao, roomMap));
-		registry.bind(Date.class, DateConverter.class);
-
-		readList(serializer, f, "chat_messages.xml", "chat_messages", ChatMessage.class, (node, m) -> {
+		readList(unmarshaller, base, "chat_messages.xml", CHAT_LIST_NODE, CHAT_NODE, eClazz, m -> {
 			m.setId(null);
-			if (m.getFromUser() == null
-					|| m.getFromUser().getId() == null
+			if (m.getFromUser() == null || m.getFromUser().getId() == null
 					|| (m.getToRoom() != null && m.getToRoom().getId() == null)
 					|| (m.getToUser() != null && m.getToUser().getId() == null))
 			{
@@ -745,13 +746,14 @@ public class BackupImport {
 	/*
 	 * ##################### Import Calendars
 	 */
-	private void importCalendars(File f) throws Exception {
+	void importCalendars(File base) throws Exception {
 		log.info("Chat messages import complete, starting calendar import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer serializer = new Persister(strategy);
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		readList(serializer, f, "calendars.xml", "calendars", OmCalendar.class, (node, c) -> {
+		Class<OmCalendar> eClazz = OmCalendar.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
+
+		readList(unmarshaller, base, "calendars.xml", CALENDAR_LIST_NODE, CALENDAR_NODE, eClazz, c -> {
 			Long id = c.getId();
 			c.setId(null);
 			c = calendarDao.update(c);
@@ -760,21 +762,18 @@ public class BackupImport {
 	}
 
 	/*
-	 * ##################### Import Appointements
+	 * ##################### Import Appointments
 	 */
-	private void importAppointments(File f) throws Exception {
+	void importAppointments(File base) throws Exception {
 		log.info("Calendar import complete, starting appointement import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer serializer = new Persister(strategy);
+		Class<Appointment> eClazz = Appointment.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
+		unmarshaller.setAdapter(new RoomAdapter(roomDao, roomMap));
+		unmarshaller.setAdapter(new OmCalendarAdapter(calendarDao, calendarMap));
 
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		registry.bind(Appointment.Reminder.class, AppointmentReminderTypeConverter.class);
-		registry.bind(Room.class, new RoomConverter(roomDao, roomMap));
-		registry.bind(Date.class, DateConverter.class);
-		registry.bind(OmCalendar.class, new OmCalendarConverter(calendarDao, calendarMap));
-
-		readList(serializer, f, "appointements.xml", "appointments", Appointment.class, (node, a) -> {
+		readList(unmarshaller, base, "appointements.xml", APPOINTMENT_LIST_NODE, APPOINTMENT_NODE, eClazz, a -> {
 			Long appId = a.getId();
 
 			// We need to reset this as openJPA reject to store them otherwise
@@ -800,15 +799,15 @@ public class BackupImport {
 	 *
 	 * Reminder Invitations will be NOT send!
 	 */
-	private void importMeetingMembers(File f) throws Exception {
+	void importMeetingMembers(File base) throws Exception {
 		log.info("Appointement import complete, starting meeting members import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer ser = new Persister(strategy);
+		Class<MeetingMember> eClazz = MeetingMember.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
+		unmarshaller.setAdapter(new AppointmentAdapter(appointmentDao, appointmentMap));
 
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		registry.bind(Appointment.class, new AppointmentConverter(appointmentDao, appointmentMap));
-		readList(ser, f, "meetingmembers.xml", "meetingmembers", MeetingMember.class, (node, ma) -> {
+		readList(unmarshaller, base, "meetingmembers.xml", MMEMBER_LIST_NODE, MMEMBER_NODE, eClazz, ma -> {
 			ma.setId(null);
 			meetingMemberDao.update(ma);
 		});
@@ -847,17 +846,17 @@ public class BackupImport {
 	}
 
 	private <T extends BaseFileItem> void saveTree(
-			Serializer ser
-			, File baseDir
+			File baseDir
 			, String fileName
 			, String listNodeName
+			, String nodeName
 			, Class<T> clazz
 			, Map<Long, Long> folders
 			, Consumer<T> save
 			)
 	{
 		TreeMap<Long, T> items = new TreeMap<>();
-		readList(ser, baseDir, fileName, listNodeName, clazz, (node, f) -> {
+		readList(baseDir, fileName, listNodeName, nodeName, clazz, f -> {
 			items.put(f.getId(), f);
 		}, false);
 		FileTree<T> tree = new FileTree<>();
@@ -884,19 +883,10 @@ public class BackupImport {
 	/*
 	 * ##################### Import Recordings
 	 */
-	private void importRecordings(File f) throws Exception {
+	void importRecordings(File base) throws Exception {
 		log.info("Meeting members import complete, starting recordings server import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		RegistryMatcher matcher = new RegistryMatcher();
-		Serializer ser = new Persister(strategy, matcher);
-
-		matcher.bind(Long.class, LongTransform.class);
-		matcher.bind(Integer.class, IntegerTransform.class);
-		registry.bind(Date.class, DateConverter.class);
-		registry.bind(Recording.Status.class, RecordingStatusConverter.class);
 		final Map<Long, Long> folders = new HashMap<>();
-		saveTree(ser, f, "flvRecordings.xml", "flvrecordings", Recording.class, folders, r -> {
+		saveTree(base, "flvRecordings.xml", RECORDING_LIST_NODE, RECORDING_NODE, Recording.class, folders, r -> {
 			Long recId = r.getId();
 			r.setId(null);
 			if (r.getChunks() != null) {
@@ -905,36 +895,40 @@ public class BackupImport {
 					chunk.setRecording(r);
 				}
 			}
-			String oldHash = r.getHash();
-			if (!Strings.isEmpty(oldHash) && oldHash.startsWith(RECORDING_FILE_NAME)) {
-				String name = getFileName(oldHash);
-				r.setHash(randomUUID().toString());
-				fileMap.put(String.format(FILE_NAME_FMT, name, EXTENSION_JPG), String.format(FILE_NAME_FMT, r.getHash(), EXTENSION_PNG));
-				fileMap.put(String.format("%s.%s.%s", name, "flv", EXTENSION_MP4), String.format(FILE_NAME_FMT, r.getHash(), EXTENSION_MP4));
-			}
-			checkHash(r, recordingDao);
+			checkHash(r, recordingDao, (oldHash, newHash) -> {
+				if (!Strings.isEmpty(oldHash) && oldHash.startsWith(RECORDING_FILE_NAME)) {
+					String name = getFileName(oldHash);
+					fileMap.put(String.format(FILE_NAME_FMT, name, EXTENSION_JPG), String.format(FILE_NAME_FMT, newHash, EXTENSION_PNG));
+					fileMap.put(String.format("%s.%s.%s", name, "flv", EXTENSION_MP4), String.format(FILE_NAME_FMT, newHash, EXTENSION_MP4));
+				}
+			});
 			r = recordingDao.update(r);
-			if (BaseFileItem.Type.Folder == r.getType()) {
+			if (BaseFileItem.Type.FOLDER == r.getType()) {
 				folders.put(recId, r.getId());
 			}
 			fileItemMap.put(recId, r.getId());
 		});
 	}
 
-	private void checkHash(BaseFileItem file, BaseFileItemDao dao) {
+	private void checkHash(BaseFileItem file, BaseFileItemDao dao, BiConsumer<String, String> consumer) {
 		String oldHash = file.getHash();
 		if (Strings.isEmpty(oldHash) || !UUID_PATTERN.matcher(oldHash).matches() || dao.get(oldHash) != null) {
 			file.setHash(randomUUID().toString());
 			hashMap.put(oldHash, file.getHash());
+			if (consumer != null) {
+				consumer.accept(oldHash, file.getHash());
+			}
+		} else {
+			hashMap.put(file.getHash(), file.getHash());
 		}
 	}
 
 	/*
 	 * ##################### Import Private Message Folders
 	 */
-	private void importPrivateMsgFolders(File f, Serializer simpleSerializer) {
+	void importPrivateMsgFolders(File base) {
 		log.info("Recording import complete, starting private message folder import");
-		readList(simpleSerializer, f, "privateMessageFolder.xml", "privatemessagefolders", PrivateMessageFolder.class, (node, p) -> {
+		readList(base, "privateMessageFolder.xml", MSG_FOLDER_LIST_NODE, MSG_FOLDER_NODE, PrivateMessageFolder.class, p -> {
 			Long folderId = p.getId();
 			PrivateMessageFolder storedFolder = privateMessageFolderDao.get(folderId);
 			if (storedFolder == null) {
@@ -948,15 +942,14 @@ public class BackupImport {
 	/*
 	 * ##################### Import User Contacts
 	 */
-	private void importContacts(File f) throws Exception {
+	private void importContacts(File base) throws Exception {
 		log.info("Private message folder import complete, starting user contacts import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer serializer = new Persister(strategy);
+		Class<UserContact> eClazz = UserContact.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
 
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-
-		readList(serializer, f, "userContacts.xml", "usercontacts", UserContact.class, (node, uc) -> {
+		readList(unmarshaller, base, "userContacts.xml", CONTACT_LIST_NODE, CONTACT_NODE, eClazz, uc -> {
 			Long ucId = uc.getId();
 			UserContact storedUC = userContactDao.get(ucId);
 
@@ -974,17 +967,15 @@ public class BackupImport {
 	/*
 	 * ##################### Import Private Messages
 	 */
-	private void importPrivateMsgs(File f) throws Exception {
+	private void importPrivateMsgs(File base) throws Exception {
 		log.info("Usercontact import complete, starting private messages item import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer serializer = new Persister(strategy);
+		Class<PrivateMessage> eClazz = PrivateMessage.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
+		unmarshaller.setAdapter(new RoomAdapter(roomDao, roomMap));
 
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		registry.bind(Room.class, new RoomConverter(roomDao, roomMap));
-		registry.bind(Date.class, DateConverter.class);
-
-		readList(serializer, f, "privateMessages.xml", "privatemessages", PrivateMessage.class, (node, p) -> {
+		readList(unmarshaller, base, "privateMessages.xml", MSG_LIST_NODE, MSG_NODE, eClazz, p -> {
 			p.setId(null);
 			p.setFolderId(messageFolderMap.get(p.getFolderId()));
 			p.setUserContactId(userContactMap.get(p.getUserContactId()));
@@ -1007,25 +998,17 @@ public class BackupImport {
 	/*
 	 * ##################### Import File-Explorer Items
 	 */
-	private List<FileItem> importFiles(File f) throws Exception {
+	private List<FileItem> importFiles(File base) throws Exception {
 		log.info("Private message import complete, starting file explorer item import");
 		List<FileItem> result = new ArrayList<>();
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		RegistryMatcher matcher = new RegistryMatcher();
-		Serializer ser = new Persister(strategy, matcher);
-
-		matcher.bind(Long.class, LongTransform.class);
-		matcher.bind(Integer.class, IntegerTransform.class);
-		registry.bind(Date.class, DateConverter.class);
 		final Map<Long, Long> folders = new HashMap<>();
-		saveTree(ser, f, "fileExplorerItems.xml", "fileExplorerItems", FileItem.class, folders, file -> {
+		saveTree(base, "fileExplorerItems.xml", FILE_LIST_NODE, FILE_NODE, FileItem.class, folders, file -> {
 			Long fId = file.getId();
 			// We need to reset this as openJPA reject to store them otherwise
 			file.setId(null);
-			checkHash(file, fileItemDao);
+			checkHash(file, fileItemDao, null);
 			file = fileItemDao.update(file);
-			if (BaseFileItem.Type.Folder == file.getType()) {
+			if (BaseFileItem.Type.FOLDER == file.getType()) {
 				folders.put(fId, file.getId());
 			}
 			result.add(file);
@@ -1037,20 +1020,15 @@ public class BackupImport {
 	/*
 	 * ##################### Import Room Polls
 	 */
-	private void importPolls(File f) throws Exception {
+	private void importPolls(File base) throws Exception {
 		log.info("File explorer item import complete, starting room poll import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		RegistryMatcher matcher = new RegistryMatcher();
-		Serializer serializer = new Persister(strategy, matcher);
+		Class<RoomPoll> eClazz = RoomPoll.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new UserAdapter(userDao, userMap));
+		unmarshaller.setAdapter(new RoomAdapter(roomDao, roomMap));
 
-		matcher.bind(Integer.class, IntegerTransform.class);
-		registry.bind(User.class, new UserConverter(userDao, userMap));
-		registry.bind(Room.class, new RoomConverter(roomDao, roomMap));
-		registry.bind(RoomPoll.Type.class, PollTypeConverter.class);
-		registry.bind(Date.class, DateConverter.class);
-
-		readList(serializer, f, "roompolls.xml", "roompolls", RoomPoll.class, (node, rp) -> {
+		readList(unmarshaller, base, "roompolls.xml", POLL_LIST_NODE, POLL_NODE, eClazz, rp -> {
 			rp.setId(null);
 			if (rp.getRoom() == null || rp.getRoom().getId() == null) {
 				//room was deleted
@@ -1071,15 +1049,14 @@ public class BackupImport {
 	/*
 	 * ##################### Import Room Files
 	 */
-	private void importRoomFiles(File f) throws Exception {
+	private void importRoomFiles(File base) throws Exception {
 		log.info("Poll import complete, starting room files import");
-		Registry registry = new Registry();
-		Strategy strategy = new RegistryStrategy(registry);
-		Serializer serializer = new Persister(strategy);
+		Class<RoomFile> eClazz = RoomFile.class;
+		JAXBContext jc = JAXBContext.newInstance(eClazz);
+		Unmarshaller unmarshaller = jc.createUnmarshaller();
+		unmarshaller.setAdapter(new FileAdapter(fileItemDao, fileItemMap));
 
-		registry.bind(BaseFileItem.class, new BaseFileItemConverter(fileItemDao, fileItemMap));
-
-		readList(serializer, f, "roomFiles.xml", "RoomFiles", RoomFile.class, (node, rf) -> {
+		readList(unmarshaller, base, "roomFiles.xml", ROOM_FILE_LIST_NODE, ROOM_FILE_NODE, eClazz, rf -> {
 			Room r = roomDao.get(roomMap.get(rf.getRoomId()));
 			if (r == null || rf.getFile() == null || rf.getFile().getId() == null) {
 				return;
@@ -1094,11 +1071,19 @@ public class BackupImport {
 		}, true);
 	}
 
-	private static <T> void readList(Serializer ser, File baseDir, String fileName, String listNodeName, Class<T> clazz, BiConsumer<InputNode, T> consumer) {
-		readList(ser, baseDir, fileName, listNodeName, clazz, consumer, false);
+	private static <T> void readList(File baseDir, String fileName, String listNodeName, String nodeName, Class<T> clazz, Consumer<T> consumer) {
+		readList(baseDir, fileName, listNodeName, nodeName, clazz, consumer, false);
 	}
 
-	private static <T> void readList(Serializer ser, File baseDir, String fileName, String listNodeName, Class<T> clazz, BiConsumer<InputNode, T> consumer, boolean notThow) {
+	private static <T> void readList(Unmarshaller unmarshaller, File baseDir, String fileName, String listNodeName, String nodeName, Class<T> clazz, Consumer<T> consumer) {
+		readList(unmarshaller, baseDir, fileName, listNodeName, nodeName, clazz, consumer, false);
+	}
+
+	private static <T> void readList(File baseDir, String fileName, String listNodeName, String nodeName, Class<T> clazz, Consumer<T> consumer, boolean notThow) {
+		readList(null, baseDir, fileName, listNodeName, nodeName, clazz, consumer, notThow);
+	}
+
+	private static <T> void readList(Unmarshaller inUnmarshaller, File baseDir, String fileName, String listNodeName, String nodeName, Class<T> clazz, Consumer<T> consumer, boolean notThow) {
 		File xml = new File(baseDir, fileName);
 		if (!xml.exists()) {
 			final String msg = fileName + " missing";
@@ -1109,20 +1094,26 @@ public class BackupImport {
 				throw new BackupException(msg);
 			}
 		}
-		try (InputStream rootIs1 = new FileInputStream(xml); InputStream rootIs2 = new FileInputStream(xml)) {
-			InputNode root1 = NodeBuilder.read(rootIs1);
-			InputNode root2 = NodeBuilder.read(rootIs2); // for various hacks
-			InputNode listNode1 = root1.getNext();
-			InputNode listNode2 = root2.getNext(); // for various hacks
-			if (listNodeName.equals(listNode1.getName())) {
-				InputNode item1 = listNode1.getNext();
-				while (item1 != null) {
-					T o = ser.read(clazz, item1, false);
-					if (consumer != null) {
-						consumer.accept(listNode2, o);
+		try {
+			Unmarshaller unmarshaller = inUnmarshaller;
+			if (inUnmarshaller == null) {
+				JAXBContext jc = JAXBContext.newInstance(clazz);
+				unmarshaller = jc.createUnmarshaller();
+			}
+			XMLInputFactory xif = XmlHelper.createInputFactory();
+			StreamSource xmlSource = new StreamSource(xml);
+			XMLStreamReader xsr = xif.createXMLStreamReader(xmlSource);
+			boolean listNodeFound = false;
+			while (xsr.getEventType() != XMLStreamReader.END_DOCUMENT) {
+				if (xsr.isStartElement()) {
+					if (!listNodeFound && listNodeName.equals(xsr.getLocalName())) {
+						listNodeFound = true;
+					} else if (nodeName.equals(xsr.getLocalName())) {
+						T o = unmarshaller.unmarshal(xsr, clazz).getValue();
+						consumer.accept(o);
 					}
-					item1 = listNode1.getNext();
 				}
+				xsr.next();
 			}
 		} catch (Exception e) {
 			throw new BackupException(e);
@@ -1145,12 +1136,12 @@ public class BackupImport {
 			if (EXTENSION_PNG.equals(ext)) {
 				Long id = getPrefixedId(GROUP_LOGO_PREFIX, f, groupMap);
 				if (id != null) {
-					FileUtils.moveFile(f, getGroupLogo(id, false));
+					FileUtils.copyFile(f, getGroupLogo(id, false));
 				}
 			} else if (EXTENSION_CSS.equals(ext)) {
 				Long id = getPrefixedId(GROUP_CSS_PREFIX, f, groupMap);
 				if (id != null) {
-					FileUtils.moveFile(f, getGroupCss(id, false));
+					FileUtils.copyFile(f, getGroupCss(id, false));
 				}
 			}
 		}

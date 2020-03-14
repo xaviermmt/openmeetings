@@ -33,18 +33,17 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.openmeetings.core.remote.KurentoHandler;
 import org.apache.openmeetings.core.remote.StreamProcessor;
 import org.apache.openmeetings.core.util.WebSocketHelper;
 import org.apache.openmeetings.db.dao.calendar.AppointmentDao;
-import org.apache.openmeetings.db.dao.log.ConferenceLogDao;
 import org.apache.openmeetings.db.dao.user.UserDao;
 import org.apache.openmeetings.db.entity.basic.Client;
 import org.apache.openmeetings.db.entity.basic.Client.StreamDesc;
 import org.apache.openmeetings.db.entity.calendar.Appointment;
 import org.apache.openmeetings.db.entity.calendar.MeetingMember;
 import org.apache.openmeetings.db.entity.file.BaseFileItem;
-import org.apache.openmeetings.db.entity.log.ConferenceLog;
 import org.apache.openmeetings.db.entity.room.Room;
 import org.apache.openmeetings.db.entity.room.Room.Right;
 import org.apache.openmeetings.db.entity.room.Room.RoomElement;
@@ -62,7 +61,6 @@ import org.apache.openmeetings.web.app.QuickPollManager;
 import org.apache.openmeetings.web.app.TimerService;
 import org.apache.openmeetings.web.app.WebSession;
 import org.apache.openmeetings.web.common.BasePanel;
-import org.apache.openmeetings.web.pages.BasePage;
 import org.apache.openmeetings.web.room.activities.Activity;
 import org.apache.openmeetings.web.room.menu.RoomMenuPanel;
 import org.apache.openmeetings.web.room.sidebar.RoomSidebar;
@@ -70,7 +68,6 @@ import org.apache.openmeetings.web.room.wb.AbstractWbPanel;
 import org.apache.openmeetings.web.room.wb.InterviewWbPanel;
 import org.apache.openmeetings.web.room.wb.WbAction;
 import org.apache.openmeetings.web.room.wb.WbPanel;
-import org.apache.openmeetings.web.util.ExtendedClientProperties;
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
@@ -85,6 +82,9 @@ import org.apache.wicket.markup.head.OnDomReadyHeaderItem;
 import org.apache.wicket.markup.head.PriorityHeaderItem;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.repeater.RepeatingView;
+import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
+import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.protocol.ws.api.BaseWebSocketBehavior;
 import org.apache.wicket.protocol.ws.api.event.WebSocketPushPayload;
 import org.apache.wicket.request.cycle.RequestCycle;
@@ -104,12 +104,15 @@ import com.github.openjson.JSONObject;
 import com.googlecode.wicket.jquery.core.JQueryBehavior;
 import com.googlecode.wicket.jquery.core.Options;
 import com.googlecode.wicket.jquery.ui.interaction.droppable.Droppable;
-import com.googlecode.wicket.jquery.ui.widget.dialog.DialogButton;
-import com.googlecode.wicket.jquery.ui.widget.dialog.DialogButtons;
-import com.googlecode.wicket.jquery.ui.widget.dialog.DialogIcon;
-import com.googlecode.wicket.jquery.ui.widget.dialog.MessageDialog;
 
-@AuthorizeInstantiation("Room")
+import de.agilecoders.wicket.core.markup.html.bootstrap.button.BootstrapAjaxLink;
+import de.agilecoders.wicket.core.markup.html.bootstrap.button.Buttons;
+import de.agilecoders.wicket.core.markup.html.bootstrap.dialog.Alert;
+import de.agilecoders.wicket.core.markup.html.bootstrap.dialog.Modal;
+import de.agilecoders.wicket.core.markup.html.bootstrap.dialog.Modal.Backdrop;
+import de.agilecoders.wicket.core.markup.html.bootstrap.dialog.TextContentModal;
+
+@AuthorizeInstantiation("ROOM")
 public class RoomPanel extends BasePanel {
 	private static final long serialVersionUID = 1L;
 	private static final Logger log = LoggerFactory.getLogger(RoomPanel.class);
@@ -132,20 +135,14 @@ public class RoomPanel extends BasePanel {
 		protected void respond(AjaxRequestTarget target) {
 			log.debug("RoomPanel::roomEnter");
 			WebSession ws = WebSession.get();
-			ExtendedClientProperties cp = ws.getExtendedProperties();
-			confLogDao.add(
-					ConferenceLog.Type.roomEnter
-					, getUserId(), "0", r.getId()
-					, cp.getRemoteAddress()
-					, String.valueOf(r.getId()));
-			Client _c = getClient();
-			JSONObject options = VideoSettings.getInitJson(_c.getSid())
-					.put("uid", _c.getUid())
-					.put("rights", _c.toJson(true).getJSONArray("rights"))
+			Client c = getClient();
+			JSONObject options = VideoSettings.getInitJson(c.getSid())
+					.put("uid", c.getUid())
+					.put("rights", c.toJson(true).getJSONArray("rights"))
 					.put("interview", interview)
 					.put("audioOnly", r.isAudioOnly())
 					.put("questions", r.isAllowUserQuestions())
-					.put("showMicStatus", !r.getHiddenElements().contains(RoomElement.MicrophoneStatus));
+					.put("showMicStatus", !r.getHiddenElements().contains(RoomElement.MICROPHONE_STATUS));
 			if (!Strings.isEmpty(r.getRedirectURL()) && (ws.getSoapLogin() != null || ws.getInvitation() != null)) {
 				options.put("reloadUrl", r.getRedirectURL());
 			}
@@ -153,19 +150,22 @@ public class RoomPanel extends BasePanel {
 					.append(wb.getInitScript())
 					.append(getQuickPollJs());
 			target.appendJavaScript(sb);
-			WebSocketHelper.sendRoom(new RoomMessage(r.getId(), _c, RoomMessage.Type.roomEnter));
+			WebSocketHelper.sendRoom(new RoomMessage(r.getId(), c, RoomMessage.Type.ROOM_ENTER));
 			// play video from other participants
 			initVideos(target);
 			getMainPanel().getChat().roomEnter(r, target);
 			if (r.isFilesOpened()) {
 				sidebar.setFilesActive(target);
 			}
-			if (Room.Type.presentation != r.getType()) {
-				List<Client> mods = cm.listByRoom(r.getId(), c -> c.hasRight(Room.Right.moderator));
-				log.debug("RoomPanel::roomEnter, mods IS EMPTY ? {}, is MOD ? {}", mods.isEmpty(), _c.hasRight(Room.Right.moderator));
+			if (Room.Type.PRESENTATION != r.getType()) {
+				List<Client> mods = cm.listByRoom(r.getId(), cl -> cl.hasRight(Room.Right.MODERATOR));
+				log.debug("RoomPanel::roomEnter, mods IS EMPTY ? {}, is MOD ? {}", mods.isEmpty(), c.hasRight(Room.Right.MODERATOR));
 				if (mods.isEmpty()) {
-					waitApplyModeration.open(target);
+					showIdeaAlert(target, getString(r.isModerated() ? "641" : "498"));
 				}
+			}
+			if (r.isWaitRecording()) {
+				showIdeaAlert(target, getString("1315"));
 			}
 			wb.update(target);
 		}
@@ -190,8 +190,8 @@ public class RoomPanel extends BasePanel {
 		}
 	};
 	private RedirectMessageDialog roomClosed;
-	private MessageDialog clientKicked, nooneCanHelp, waitApplyModeration;
-	private WaitModeratorDialog waitModerator;
+	private Modal<String> clientKicked;
+	private Alert waitModerator;
 
 	private RoomMenuPanel menu;
 	private RoomSidebar sidebar;
@@ -235,8 +235,6 @@ public class RoomPanel extends BasePanel {
 	@SpringBean
 	private ClientManager cm;
 	@SpringBean
-	private ConferenceLogDao confLogDao;
-	@SpringBean
 	private UserDao userDao;
 	@SpringBean
 	private AppointmentDao apptDao;
@@ -252,7 +250,7 @@ public class RoomPanel extends BasePanel {
 	public RoomPanel(String id, Room r) {
 		super(id);
 		this.r = r;
-		this.interview = Room.Type.interview == r.getType();
+		this.interview = Room.Type.INTERVIEW == r.getType();
 		this.wb = interview ? new InterviewWbPanel("whiteboard", this) : new WbPanel("whiteboard", this);
 	}
 
@@ -280,7 +278,7 @@ public class RoomPanel extends BasePanel {
 				@Override
 				public void onConfigure(JQueryBehavior behavior) {
 					super.onConfigure(behavior);
-					behavior.setOption("hoverClass", Options.asString("ui-state-hover"));
+					behavior.setOption("hoverClass", Options.asString("droppable-hover"));
 					behavior.setOption("accept", Options.asString(".recorditem, .fileitem, .readonlyitem"));
 				}
 
@@ -364,45 +362,6 @@ public class RoomPanel extends BasePanel {
 				room.setVisible(false);
 			}
 		}
-		nooneCanHelp = new MessageDialog("noone-can-help", getString("204"), getString("696"), DialogButtons.OK, DialogIcon.LIGHT) {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void onClose(IPartialPageRequestHandler handler, DialogButton button) {
-				// no-op
-			}
-		};
-		waitApplyModeration = new MessageDialog("wait-apply-moderation", getString("204"), getString(r.isModerated() ? "641" : "498"), DialogButtons.OK, DialogIcon.LIGHT) {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void onClose(IPartialPageRequestHandler handler, DialogButton button) {
-				// no-op
-			}
-		};
-		if (r.isWaitRecording()) {
-			add(new MessageDialog("wait-recording", getString("1316"), getString("1315"), DialogButtons.OK, DialogIcon.LIGHT) {
-				private static final long serialVersionUID = 1L;
-
-				@Override
-				public void onConfigure(JQueryBehavior behavior) {
-					super.onConfigure(behavior);
-					behavior.setOption("autoOpen", true);
-				}
-
-				@Override
-				public boolean isResizable() {
-					return false;
-				}
-
-				@Override
-				public void onClose(IPartialPageRequestHandler handler, DialogButton button) {
-					//no-op
-				}
-			});
-		} else {
-			add(new WebMarkupContainer("wait-recording").setVisible(false));
-		}
 		RepeatingView groupstyles = new RepeatingView("groupstyle");
 		add(groupstyles.setVisible(room.isVisible() && !r.getGroups().isEmpty()));
 		if (room.isVisible()) {
@@ -421,19 +380,19 @@ public class RoomPanel extends BasePanel {
 			final int count = cm.addToRoom(c.setRoom(getRoom()));
 			SOAPLogin soap = WebSession.get().getSoapLogin();
 			if (soap != null && soap.isModerator()) {
-				c.allow(Right.superModerator);
+				c.allow(Right.SUPER_MODERATOR);
 				cm.update(c);
 			} else {
 				Set<Right> rr = AuthLevelUtil.getRoomRight(c.getUser(), r, r.isAppointment() ? apptDao.getByRoom(r.getId()) : null, count);
 				if (!rr.isEmpty()) {
 					c.allow(rr);
 					cm.update(c);
-					log.info("Setting rights for client:: {} -> {}", rr, c.hasRight(Right.moderator));
+					log.info("Setting rights for client:: {} -> {}", rr, c.hasRight(Right.MODERATOR));
 				}
 			}
 			if (r.isModerated() && r.isWaitModerator()
-					&& !c.hasRight(Right.moderator)
-					&& cm.listByRoom(r.getId(), cl -> cl.hasRight(Right.moderator)).isEmpty())
+					&& !c.hasRight(Right.MODERATOR)
+					&& cm.listByRoom(r.getId(), cl -> cl.hasRight(Right.MODERATOR)).isEmpty())
 			{
 				room.setVisible(false);
 				createWaitModerator(true);
@@ -446,15 +405,20 @@ public class RoomPanel extends BasePanel {
 		if (waitModerator == null) {
 			createWaitModerator(false);
 		}
-		add(room, accessDenied, eventDetail, waitModerator, nooneCanHelp, waitApplyModeration);
-		add(clientKicked = new MessageDialog("client-kicked", getString("797"), getString("606"), DialogButtons.OK, DialogIcon.ERROR) {
-			private static final long serialVersionUID = 1L;
+		add(room, accessDenied, eventDetail, waitModerator);
+		add(clientKicked = new TextContentModal("client-kicked", new ResourceModel("606")));
+		clientKicked
+			.header(new ResourceModel("797"))
+			.setCloseOnEscapeKey(false)
+			.setBackdrop(Backdrop.FALSE)
+			.addButton(new BootstrapAjaxLink<>("button", Model.of(""), Buttons.Type.Outline_Primary, new ResourceModel("54")) {
+				private static final long serialVersionUID = 1L;
 
-			@Override
-			public void onClose(IPartialPageRequestHandler handler, DialogButton button) {
-				menu.exit(handler);
-			}
-		});
+				public void onClick(AjaxRequestTarget target) {
+					clientKicked.close(target);
+					menu.exit(target);
+				}
+			});
 	}
 
 	@Override
@@ -466,20 +430,20 @@ public class RoomPanel extends BasePanel {
 				RoomMessage m = (RoomMessage)wsEvent.getMessage();
 				IPartialPageRequestHandler handler = wsEvent.getHandler();
 				switch (m.getType()) {
-					case pollCreated:
+					case POLL_CREATED:
 						menu.updatePoll(handler, m.getUserId());
 						break;
-					case pollUpdated:
+					case POLL_UPDATED:
 						menu.updatePoll(handler, null);
 						break;
-					case recordingToggled:
+					case RECORDING_TOGGLED:
 						menu.update(handler);
 						updateInterviewRecordingButtons(handler);
 						break;
-					case sharingToggled:
+					case SHARING_TOGGLED:
 						menu.update(handler);
 						break;
-					case rightUpdated:
+					case RIGHT_UPDATED:
 						{
 							String uid = ((TextRoomMessage)m).getText();
 							Client c = cm.get(uid);
@@ -496,64 +460,64 @@ public class RoomPanel extends BasePanel {
 							updateInterviewRecordingButtons(handler);
 						}
 						break;
-					case roomEnter:
+					case ROOM_ENTER:
 						sidebar.update(handler);
 						menu.update(handler);
 						sidebar.addActivity(new Activity(m, Activity.Type.roomEnter), handler);
 						break;
-					case roomExit:
+					case ROOM_EXIT:
 						sidebar.update(handler);
 						sidebar.addActivity(new Activity(m, Activity.Type.roomExit), handler);
 						handler.appendJavaScript("Chat.removeTab('" + ID_USER_PREFIX + m.getUserId() + "');");
 						break;
-					case roomClosed:
+					case ROOM_CLOSED:
 						handler.add(room.setVisible(false));
-						roomClosed.open(handler);
+						roomClosed.show(handler);
 						break;
-					case requestRightModerator:
+					case REQUEST_RIGHT_MODERATOR:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightModerator), handler);
 						break;
-					case requestRightPresenter:
+					case REQUEST_RIGHT_PRESENTER:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightPresenter), handler);
 						break;
-					case requestRightWb:
+					case REQUEST_RIGHT_WB:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightWb), handler);
 						break;
-					case requestRightShare:
+					case REQUEST_RIGHT_SHARE:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightShare), handler);
 						break;
-					case requestRightRemote:
+					case REQUEST_RIGHT_REMOTE:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightRemote), handler);
 						break;
-					case requestRightA:
+					case REQUEST_RIGHT_A:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightA), handler);
 						break;
-					case requestRightAv:
+					case REQUEST_RIGHT_AV:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightAv), handler);
 						break;
-					case requestRightMuteOthers:
+					case REQUEST_RIGHT_MUTE_OTHERS:
 						sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.reqRightMuteOthers), handler);
 						break;
-					case activityRemove:
+					case ACTIVITY_REMOVE:
 						sidebar.removeActivity(((TextRoomMessage)m).getText(), handler);
 						break;
-					case haveQuestion:
-						if (_c.hasRight(Room.Right.moderator) || getUserId().equals(m.getUserId())) {
+					case HAVE_QUESTION:
+						if (_c.hasRight(Room.Right.MODERATOR) || getUserId().equals(m.getUserId())) {
 							sidebar.addActivity(new Activity((TextRoomMessage)m, Activity.Type.haveQuestion), handler);
 						}
 						break;
-					case kick:
+					case KICK:
 						{
 							String uid = ((TextRoomMessage)m).getText();
 							if (_c.getUid().equals(uid)) {
 								handler.add(room.setVisible(false));
 								getMainPanel().getChat().toggle(handler, false);
-								clientKicked.open(handler);
+								clientKicked.show(handler);
 								cm.exitRoom(_c);
 							}
 						}
 						break;
-					case mute:
+					case MUTE:
 					{
 						JSONObject obj = new JSONObject(((TextRoomMessage)m).getText());
 						Client c = cm.getBySid(obj.getString("sid"));
@@ -566,7 +530,7 @@ public class RoomPanel extends BasePanel {
 						}
 					}
 						break;
-					case muteOthers:
+					case MUTE_OTHERS:
 					{
 						String uid = ((TextRoomMessage)m).getText();
 						Client c = cm.get(uid);
@@ -577,34 +541,34 @@ public class RoomPanel extends BasePanel {
 						handler.appendJavaScript(String.format("if (typeof(VideoManager) !== 'undefined') {VideoManager.muteOthers('%s');}", uid));
 					}
 						break;
-					case quickPollUpdated:
+					case QUICK_POLL_UPDATED:
 					{
 						menu.update(handler);
 						handler.appendJavaScript(getQuickPollJs());
 					}
 						break;
-					case kurentoStatus:
+					case KURENTO_STATUS:
 						menu.update(handler);
 						break;
-					case wbReload:
-						if (Room.Type.interview != r.getType()) {
+					case WB_RELOAD:
+						if (Room.Type.INTERVIEW != r.getType()) {
 							wb.reloadWb(handler);
 						}
 						break;
-					case moderatorInRoom: {
+					case MODERATOR_IN_ROOM: {
 						if (!r.isModerated() || !r.isWaitModerator()) {
 							log.warn("Something weird: `moderatorInRoom` in wrong room {}", r);
-						} else if (!_c.hasRight(Room.Right.moderator)) {
+						} else if (!_c.hasRight(Room.Right.MODERATOR)) {
 							boolean moderInRoom = Boolean.TRUE.equals(Boolean.valueOf(((TextRoomMessage)m).getText()));
 							log.warn("!! moderatorInRoom: {}", moderInRoom);
 							if (room.isVisible() != moderInRoom) {
 								handler.add(room.setVisible(moderInRoom));
-								getMainPanel().getChat().toggle(handler, moderInRoom && !r.isHidden(RoomElement.Chat));
+								getMainPanel().getChat().toggle(handler, moderInRoom && !r.isHidden(RoomElement.CHAT));
 								if (room.isVisible()) {
 									handler.appendJavaScript(roomEnter.getCallbackScript());
-									waitModerator.close(handler, null);
+									handler.add(waitModerator.setVisible(false));
 								} else {
-									waitModerator.open(handler);
+									handler.add(waitModerator.setVisible(true));
 								}
 							}
 						}
@@ -622,7 +586,7 @@ public class RoomPanel extends BasePanel {
 
 	private void updateInterviewRecordingButtons(IPartialPageRequestHandler handler) {
 		Client _c = getClient();
-		if (interview && _c.hasRight(Right.moderator)) {
+		if (interview && _c.hasRight(Right.MODERATOR)) {
 			if (streamProcessor.isRecording(r.getId())) {
 				handler.appendJavaScript("if (typeof(WbArea) === 'object') {WbArea.setRecStarted(true);}");
 			} else if (streamProcessor.recordingAllowed(getClient())) {
@@ -643,7 +607,7 @@ public class RoomPanel extends BasePanel {
 	}
 
 	public static boolean isModerator(ClientManager cm, long userId, long roomId) {
-		return hasRight(cm, userId, roomId, Right.moderator);
+		return hasRight(cm, userId, roomId, Right.MODERATOR);
 	}
 
 	public static boolean hasRight(ClientManager cm, long userId, long roomId, Right r) {
@@ -659,8 +623,8 @@ public class RoomPanel extends BasePanel {
 	public BasePanel onMenuPanelLoad(IPartialPageRequestHandler handler) {
 		getBasePage().getHeader().setVisible(false);
 		getMainPanel().getTopControls().setVisible(false);
-		Component loader = ((BasePage)getPage()).getLoader().setVisible(false);
-		if (r.isHidden(RoomElement.Chat) || !isVisible()) {
+		Component loader = getBasePage().getLoader().setVisible(false);
+		if (r.isHidden(RoomElement.CHAT) || !isVisible()) {
 			getMainPanel().getChat().toggle(handler, false);
 		}
 		if (handler != null) {
@@ -673,7 +637,7 @@ public class RoomPanel extends BasePanel {
 	}
 
 	public void show(IPartialPageRequestHandler handler) {
-		getMainPanel().getChat().toggle(handler, !r.isHidden(RoomElement.Chat));
+		getMainPanel().getChat().toggle(handler, !r.isHidden(RoomElement.CHAT));
 		handler.add(this.setVisible(true));
 		handler.appendJavaScript("Room.load();");
 	}
@@ -681,10 +645,10 @@ public class RoomPanel extends BasePanel {
 	@Override
 	public void cleanup(IPartialPageRequestHandler handler) {
 		if (eventDetail instanceof EventDetailDialog) {
-			((EventDetailDialog)eventDetail).close(handler, null);
+			((EventDetailDialog)eventDetail).close(handler);
 		}
 		handler.add(getBasePage().getHeader().setVisible(true), getMainPanel().getTopControls().setVisible(true));
-		if (r.isHidden(RoomElement.Chat)) {
+		if (r.isHidden(RoomElement.CHAT)) {
 			getMainPanel().getChat().toggle(handler, true);
 		}
 		handler.appendJavaScript("if (typeof(Room) !== 'undefined') { Room.unload(); }");
@@ -704,11 +668,10 @@ public class RoomPanel extends BasePanel {
 
 	public void requestRight(Right right, IPartialPageRequestHandler handler) {
 		RoomMessage.Type reqType = null;
-		List<Client> mods = cm.listByRoom(r.getId(), c -> c.hasRight(Room.Right.moderator));
+		List<Client> mods = cm.listByRoom(r.getId(), c -> c.hasRight(Room.Right.MODERATOR));
 		if (mods.isEmpty()) {
 			if (r.isModerated()) {
-				//dialog
-				nooneCanHelp.open(handler);
+				showIdeaAlert(handler, getString("696"));
 				return;
 			} else {
 				// we found no-one we can ask, allow right
@@ -717,29 +680,29 @@ public class RoomPanel extends BasePanel {
 		}
 		// ask
 		switch (right) {
-			case moderator:
-				reqType = Type.requestRightModerator;
+			case MODERATOR:
+				reqType = Type.REQUEST_RIGHT_MODERATOR;
 				break;
-			case presenter:
-				reqType = Type.requestRightPresenter;
+			case PRESENTER:
+				reqType = Type.REQUEST_RIGHT_PRESENTER;
 				break;
-			case whiteBoard:
-				reqType = Type.requestRightWb;
+			case WHITEBOARD:
+				reqType = Type.REQUEST_RIGHT_WB;
 				break;
-			case share:
-				reqType = Type.requestRightWb;
+			case SHARE:
+				reqType = Type.REQUEST_RIGHT_WB;
 				break;
-			case audio:
-				reqType = Type.requestRightA;
+			case AUDIO:
+				reqType = Type.REQUEST_RIGHT_A;
 				break;
-			case muteOthers:
-				reqType = Type.requestRightMuteOthers;
+			case MUTE_OTHERS:
+				reqType = Type.REQUEST_RIGHT_MUTE_OTHERS;
 				break;
-			case remoteControl:
-				reqType = Type.requestRightRemote;
+			case REMOTE_CONTROL:
+				reqType = Type.REQUEST_RIGHT_REMOTE;
 				break;
-			case video:
-				reqType = Type.requestRightAv;
+			case VIDEO:
+				reqType = Type.REQUEST_RIGHT_AV;
 				break;
 			default:
 				break;
@@ -757,10 +720,10 @@ public class RoomPanel extends BasePanel {
 		for (Right right : rights) {
 			client.deny(right);
 		}
-		if (client.hasActivity(Client.Activity.AUDIO) && !client.hasRight(Right.audio)) {
+		if (client.hasActivity(Client.Activity.AUDIO) && !client.hasRight(Right.AUDIO)) {
 			client.remove(Client.Activity.AUDIO);
 		}
-		if (client.hasActivity(Client.Activity.VIDEO) && !client.hasRight(Right.video)) {
+		if (client.hasActivity(Client.Activity.VIDEO) && !client.hasRight(Right.VIDEO)) {
 			client.remove(Client.Activity.VIDEO);
 		}
 		rightsUpdated(client);
@@ -773,7 +736,7 @@ public class RoomPanel extends BasePanel {
 
 	public void broadcast(Client client) {
 		cm.update(client);
-		WebSocketHelper.sendRoom(new TextRoomMessage(getRoom().getId(), getClient(), RoomMessage.Type.rightUpdated, client.getUid()));
+		WebSocketHelper.sendRoom(new TextRoomMessage(getRoom().getId(), getClient(), RoomMessage.Type.RIGHT_UPDATED, client.getUid()));
 	}
 
 	@Override
@@ -823,24 +786,42 @@ public class RoomPanel extends BasePanel {
 	}
 
 	private void createWaitModerator(final boolean autoopen) {
-		waitModerator = new WaitModeratorDialog("wait-moderator", getString("wait-moderator.title"), autoopen);
+		waitModerator = new Alert("wait-moderator", new ResourceModel("wait-moderator.message"), new ResourceModel("wait-moderator.title")) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			protected Component createMessage(String markupId, IModel<String> message) {
+				return super.createMessage(markupId, message).setEscapeModelStrings(false);
+			}
+		};
+		waitModerator.type(Alert.Type.Warning).setCloseButtonVisible(false);
+		waitModerator.setOutputMarkupId(true).setOutputMarkupPlaceholderTag(true).setVisible(autoopen);
 	}
 
 	@Override
 	protected String getCssClass() {
 		String clazz = "room " + r.getType().name();
-		if (r.isHidden(RoomElement.TopBar)) {
+		if (r.isHidden(RoomElement.TOP_BAR)) {
 			clazz += " no-menu";
 		}
-		if (r.isHidden(RoomElement.Activities)) {
+		if (r.isHidden(RoomElement.ACTIVITIES)) {
 			clazz += " no-activities";
 		}
-		if (r.isHidden(RoomElement.Chat)) {
+		if (r.isHidden(RoomElement.CHAT)) {
 			clazz += " no-chat";
 		}
-		if (!r.isHidden(RoomElement.MicrophoneStatus)) {
+		if (!r.isHidden(RoomElement.MICROPHONE_STATUS)) {
 			clazz += " mic-status";
 		}
 		return clazz;
+	}
+
+	private void showIdeaAlert(IPartialPageRequestHandler handler, String msg) {
+		showAlert(handler, "info", msg, "far fa-lightbulb");
+	}
+	private void showAlert(IPartialPageRequestHandler handler, String type, String msg, String icon) {
+		handler.appendJavaScript("OmUtil.alert('" + type + "', '<i class=\"" + icon + "\"></i>&nbsp;"
+				+ StringEscapeUtils.escapeEcmaScript(msg)
+				+ "', 10000)");
 	}
 }

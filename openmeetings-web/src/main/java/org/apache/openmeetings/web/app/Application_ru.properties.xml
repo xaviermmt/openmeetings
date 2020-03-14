@@ -377,7 +377,7 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="1135"><![CDATA[Пригласить]]></entry>
 	<entry key="1137"><![CDATA[хотелось бы пригласить вас в комнату для конференций:]]></entry>
 	<entry key="1138"><![CDATA[Приглашение]]></entry>
-	<entry key="1143"><![CDATA[Таймзона]]></entry>
+	<entry key="1143"><![CDATA[Временная зона]]></entry>
 	<entry key="1146"><![CDATA[Описание]]></entry>
 	<entry key="1147"><![CDATA[Создано]]></entry>
 	<entry key="1148"><![CDATA[Сообщение в ТЗ]]></entry>
@@ -428,11 +428,11 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="1218"><![CDATA[Зарезервировать комнату]]></entry>
 	<entry key="1221"><![CDATA[Добавьте дополнительный запрос для митинга и создайте комнату для конференций. Событие скопируется в календарь каждого участника.]]></entry>
 	<entry key="1222"><![CDATA[Входящие]]></entry>
-	<entry key="1223"><![CDATA[Посланные]]></entry>
+	<entry key="1223"><![CDATA[Отправленные]]></entry>
 	<entry key="1224"><![CDATA[Корзина]]></entry>
 	<entry key="1234"><![CDATA[Удалить контакт из списка]]></entry>
-	<entry key="1235"><![CDATA[Профайл пользователя]]></entry>
-	<entry key="1236"><![CDATA[Показать профайл пользователя]]></entry>
+	<entry key="1235"><![CDATA[Профиль пользователя]]></entry>
+	<entry key="1236"><![CDATA[Показать профиль пользователя]]></entry>
 	<entry key="1239"><![CDATA[Все]]></entry>
 	<entry key="1240"><![CDATA[Никто]]></entry>
 	<entry key="1241"><![CDATA[Непрочит.]]></entry>
@@ -451,7 +451,7 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="1269"><![CDATA[Пользователь разрешил доступ к своим персональным данным только контактам.]]></entry>
 	<entry key="1282"><![CDATA[Войти в комнату]]></entry>
 	<entry key="1287"><![CDATA[Выберите ваш ник]]></entry>
-	<entry key="1296"><![CDATA[Записан с]]></entry>
+	<entry key="1296"><![CDATA[Зарегистрирован]]></entry>
 	<entry key="1301"><![CDATA[Новое приватное сообщение:]]></entry>
 	<entry key="1302"><![CDATA[Нажмите сюда, чтобы перейти к профайлу и прочитать сообщение ...]]></entry>
 	<entry key="1308"><![CDATA[Id владельца]]></entry>
@@ -601,9 +601,9 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="admin.group.form.reminderDays"><![CDATA[Напоминание о стирании посылается за]]></entry>
 	<entry key="admin.group.form.tag"><![CDATA[Тэг]]></entry>
 	<entry key="admin.room.hidden.elements"><![CDATA[Скрытые элементы комнаты]]></entry>
-	<entry key="appointment.reminder.email"><![CDATA[обычный e-майл]]></entry>
-	<entry key="appointment.reminder.ical"><![CDATA[iCal e-майл]]></entry>
-	<entry key="appointment.reminder.none"><![CDATA[не посылать уведомление]]></entry>
+	<entry key="appointment.reminder.EMAIL"><![CDATA[обычный e-майл]]></entry>
+	<entry key="appointment.reminder.ICAL"><![CDATA[iCal e-майл]]></entry>
+	<entry key="appointment.reminder.NONE"><![CDATA[не посылать уведомление]]></entry>
 	<entry key="appointment.tab.advanced"><![CDATA[Дополнительные]]></entry>
 	<entry key="appointment.tab.general"><![CDATA[Общие]]></entry>
 	<entry key="bad.captcha.text"><![CDATA[Вы ввели неверный текст капчи]]></entry>
@@ -615,6 +615,7 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="bad.password.upper"><![CDATA['Слабый' пароль: обязателена по крайней мере одна прописная буква]]></entry>
 	<entry key="button.label.share"><![CDATA[Поделиться]]></entry>
 	<entry key="calendar.addCalendar"><![CDATA[Add External Calendar]]></entry>
+	<entry key="calendar.sync"><![CDATA[Синхр]]></entry>
 	<entry key="calendar.defaultTitle"><![CDATA[New Calendar]]></entry>
 	<entry key="calendar.dialogTitle"><![CDATA[Calendar Details]]></entry>
 	<entry key="calendar.error"><![CDATA[Error in making connection on the URL specified.]]></entry>
@@ -715,7 +716,7 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 			По умолчанию {0} использует интегрированную базу данных {1}. В
 			продакшине Вы должны задуматься об использовании таких баз, как {2}, {3}, {4}, {5} or {6}
 		</blockquote>
-		<div class="ui-state-highlight ui-corner-all" style="margin-top: 20px;padding: 0 .7em;">
+		<div class="ui-state-highlight ui-corner-all installer-note">
 			<p><strong>ВНИМАНИЕ</strong> Пожалуйста используйте логин БД, который трудно угадать и 'сложный' пароль с длинной не менее 8 символов.</p>
 		</div>
 	]]></entry>
@@ -819,26 +820,26 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 			</ul>
 		</li>
 	<br />
-	<b> <span style="font-size: 1.2em">Если у Вас остались
+	<b> <span class="installer-important">Если у Вас остались
 			вопросы или Вам требуется поддержка по установке или хостингу:</span></b>
 	<br />
 	<br />
 
-	<b><span style="font-size: 1.2em">Поддержка сообщества:</span></b>
+	<b><span class="installer-important">Поддержка сообщества:</span></b>
 	<br />
 	<br />
-	<span style="font-size: 1.1em"><a
+	<span class="installer-less-important"><a
 		href="https://openmeetings.apache.org/mailing-lists.html"
 		target="_blank">Список рассылки</a></span>
 	<br />
 	<br />
 	<br />
-	<b> <span style="font-size: 1.4em">Это компании,
+	<b> <span class="installer-important">Это компании,
 		которые также оказывают коммерческую поддержку Apache OpenMeetings:</span></b>
 	<br />
 	<br />
 	<br />
-	<span style="font-size: 1.3em"><a
+	<span class="installer-less-important"><a
 		href="https://openmeetings.apache.org/commercial-support.html"
 		target="_blank">https://openmeetings.apache.org/commercial-support.html</a></span>
 	<br />
@@ -880,16 +881,16 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="network.test.upl.bytes"><![CDATA[Загруженные байты]]></entry>
 	<entry key="network.test.upl.speed"><![CDATA[Скорость загрузки]]></entry>
 	<entry key="network.test.upl.time"><![CDATA[Время загрузки]]></entry>
-	<entry key="poll.type.numeric"><![CDATA[Число 1 - 10]]></entry>
-	<entry key="poll.type.yesNo"><![CDATA[Да/Нет]]></entry>
+	<entry key="poll.type.NUMERIC"><![CDATA[Число 1 - 10]]></entry>
+	<entry key="poll.type.YES_NO"><![CDATA[Да/Нет]]></entry>
 	<entry key="recordings.root.group"><![CDATA[Записи группы]]></entry>
 	<entry key="restricted.group.files"><![CDATA[Доступ к групповым файлам ограничен]]></entry>
-	<entry key="room.type.conference"><![CDATA[конференц зал (1-25 участников)]]></entry>
-	<entry key="room.type.conference.desc"><![CDATA["Демократичная", у каждого пользователя есть права на использование камеры и микрофона. Видео "стартует" автоматически]]></entry>
-	<entry key="room.type.interview"><![CDATA[интервью (1:1 встреча с записью)]]></entry>
-	<entry key="room.type.interview.desc"><![CDATA[только 2 пользователя могут использовать камеру/микрофон (в комнате может находиться любое количество участников, модератор может менять выступающих)]]></entry>
-	<entry key="room.type.presentation"><![CDATA[презентация (1-150 участников)]]></entry>
-	<entry key="room.type.presentation.desc"><![CDATA["С ограничениями": Каждый пользователь должен получить права на использование камеры/микрофона]]></entry>
+	<entry key="room.type.CONFERENCE"><![CDATA[конференц зал (1-25 участников)]]></entry>
+	<entry key="room.type.CONFERENCE.desc"><![CDATA["Демократичная", у каждого пользователя есть права на использование камеры и микрофона. Видео "стартует" автоматически]]></entry>
+	<entry key="room.type.INTERVIEW"><![CDATA[интервью (1:1 встреча с записью)]]></entry>
+	<entry key="room.type.INTERVIEW.desc"><![CDATA[только 2 пользователя могут использовать камеру/микрофон (в комнате может находиться любое количество участников, модератор может менять выступающих)]]></entry>
+	<entry key="room.type.PRESENTATION"><![CDATA[презентация (1-150 участников)]]></entry>
+	<entry key="room.type.PRESENTATION.desc"><![CDATA["С ограничениями": Каждый пользователь должен получить права на использование камеры/микрофона]]></entry>
 	<entry key="save.success"><![CDATA[Успешно сохранено]]></entry>
 	<entry key="sound.enable"><![CDATA[Включить звук]]></entry>
 	<entry key="sound.mute"><![CDATA[Выключить звук]]></entry>
@@ -901,11 +902,11 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="template.recording.expiring.greetings"><![CDATA[Дорогой(ая) {0}]]></entry>
 	<entry key="template.recording.expiring.subj.prefix"><![CDATA[Запись будет удалена]]></entry>
 	<entry key="template.recording.expiring.subj.room"><![CDATA[ -- Комната[{0}]]]></entry>
-	<entry key="user.salutation.dr"><![CDATA[Д-р]]></entry>
-	<entry key="user.salutation.mr"><![CDATA[Г-н]]></entry>
-	<entry key="user.salutation.mrs"><![CDATA[Г-жа]]></entry>
-	<entry key="user.salutation.ms"><![CDATA[Г-жа]]></entry>
-	<entry key="user.salutation.prof"><![CDATA[Проф-р]]></entry>
+	<entry key="user.salutation.DR"><![CDATA[Д-р]]></entry>
+	<entry key="user.salutation.MR"><![CDATA[Г-н]]></entry>
+	<entry key="user.salutation.MRS"><![CDATA[Г-жа]]></entry>
+	<entry key="user.salutation.MS"><![CDATA[Г-жа]]></entry>
+	<entry key="user.salutation.PROF"><![CDATA[Проф-р]]></entry>
 	<entry key="video.mic.off"><![CDATA[Микрофон выключен]]></entry>
 	<entry key="video.mic.on"><![CDATA[Микрофон включён!]]></entry>
 	<entry key="volume.label"><![CDATA[Регулировать громкость]]></entry>
@@ -917,8 +918,8 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="widget.start.header"><![CDATA[Как участвовать в конференции]]></entry>
 	<entry key="widget.start.title"><![CDATA[Быстрый старт]]></entry>
 	<entry key="wizard.button.finish"><![CDATA[Закончить]]></entry>
-	<entry key="zoom.fullFit"><![CDATA[По размеру страницы]]></entry>
-	<entry key="zoom.pageWidth"><![CDATA[По ширине страницы]]></entry>
+	<entry key="zoom.FULL_FIT"><![CDATA[По размеру страницы]]></entry>
+	<entry key="zoom.PAGE_WIDTH"><![CDATA[По ширине страницы]]></entry>
 	<entry key="label.dock.panel"><![CDATA[Кликните чтобы "прилепить" панель]]></entry>
 	<entry key="label.undock.panel"><![CDATA[Кликните чтобы "отлепить" панель]]></entry>
 	<entry key="activities.autoclean"><![CDATA[Авто-очистка]]></entry>
@@ -1003,4 +1004,7 @@ see https://openmeetings.apache.org/LanguageEditor.html for Details
 	<entry key="admin.room.wait-moderator.info"><![CDATA[Никто не сможет воспользоваться комнатой пока нет модератора]]></entry>
 	<entry key="admin.room.wait-moderator.label"><![CDATA[Ждать модератора]]></entry>
 	<entry key="wait-moderator.title"><![CDATA[Пожалуйста подождите ...]]></entry>
+	<entry key="wait-moderator.message"><![CDATA[Пожалуйста дождитесь появления <b>модератора</b>]]></entry>
+	<entry key="lbl.or"><![CDATA[or]]></entry>
+	<entry key="lbl.new"><![CDATA[новый]]></entry>
 </properties>

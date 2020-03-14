@@ -10,84 +10,79 @@ html[dir="rtl"] .room-block .wb-block {
 	right: calc(var(--room-sidebar-width) + var(--buffer-size));
 	left: auto;
 }
-.room-block .wb-block.ui-state-hover {
+.room-block .wb-block.droppable-hover {
 	border: 0;
 }
 .room-block .wb-block .wb-area {
 	height: 100%;
 }
-.room-block .wb-block.ui-state-hover .wb-area {
+.room-block .wb-block.droppable-hover .wb-area {
 	visibility: hidden;
 	height: 1px !important;
 }
 .room-block .wb-block .wb-drop-area {
 	display: none;
 }
-.room-block .wb-block.ui-state-hover .wb-drop-area {
-	background-image: url(images/drop.png);
+.room-block .wb-block.droppable-hover .wb-drop-area {
 	display: block;
-	background-repeat: no-repeat;
 	height: inherit;
 	background-position: center;
 }
-.room-block .wb-block .tabs.ui-tabs {
+.room-block .wb-block.droppable-hover .wb-drop-area::before {
+	font-family: 'Font Awesome 5 Free';
+	font-weight: 400;
+	font-size: 20em;
+	content: '\f358';
+	display: inline-block;
+	width: 100%;
+	text-align: center;
+	color: var(--success);
+}
+.room-block .wb-block .tabs {
 	height: calc(100% - var(--buffer-size));
 }
-.room-block .wb-block .tabs.ui-tabs, .room-block .wb-block .ui-tabs-panel {
-	padding: 0;
-	background-color:transparent;
-}
-.room-block .wb-block .ui-tabs-panel {
-	height: calc(100% - var(--room-wb-tabs-height));
-}
-.room-block .wb-block .ui-tabs-panel {
+.room-block .wb-block .tabs .wb-tabbar li a {
 	position: relative;
+	padding-right: 25px;
+}
+.room-block .wb-block .tabs .wb-tabbar li a button {
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	position: absolute;
+	top: 2px;
+	right: 2px;
+}
+.room-block .wb-block .tabs .wb-tab-content {
+	height: calc(100% - var(--room-wb-tabs-height));
+	position: relative;
+}
+.room-block .wb-block .tabs .wb-tab-content .tab-pane {
+	height: 100%;
 }
 .room-block .wb-block .tools {
 	position: relative;
 	display: inline-block;
 	border: 0;
 }
-.room-block .wb-block .tools .bumper {
-	float: left;
-	display: inline-block;
-	background: repeating-linear-gradient(-45deg, transparent, transparent 3px, gray 3px, gray 5px);
-}
-.room-block .wb-block .tools.vertical .bumper {
+.room-block .wb-block .tools .btn-group, .room-block .wb-block .tools .om-icon.big {
 	width: 35px;
-	height: 9px;
-}
-.room-block .wb-block .tools.horisontal .bumper {
-	width: 9px;
-	height: 35px;
-}
-.room-block .wb-block .tools.vertical {
-	width: 35px;
-	height: 394px;
-}
-.room-block .wb-block .tools.readonly.vertical {
-	width: 35px;
-	height: 43px;
-}
-.room-block .wb-block .tools.horisontal {
-	width: 394px;
-	height: 35px;
-}
-.room-block .wb-block .tools.readonly.horisontal {
-	width: 44px;
 	height: 35px;
 }
 .room-block .wb-block .tools .om-icon.big {
-	float: left;
 	vertical-align: top;
-	width: 35px;
-	height: 35px;
 	background-size: 27px;
 	margin: 0;
 	background-position: 4px !important;
+	position: relative;
 }
-.room-block .wb-block .tools .om-icon.big.settings {
-	border: 0 !important;
+.room-block .wb-block .tools .om-icon.big.stub {
+	width: 30px;
+	height: 30px;
+}
+.room-block .wb-block .tools .dropleft .dropdown-toggle::before {
+	vertical-align: bottom;
+	margin-right: 0.1rem;
 }
 .room-block .wb-block .tools .dropdown-menu .om-icon.big {
 	float: none;
@@ -98,59 +93,67 @@ html[dir="rtl"] .room-block .wb-block {
 .room-block .wb-block .tools .dropdown-menu .om-icon.big.active {
 	border: 1px solid #6b6565;
 }
-.room-block .wb-block .tools .om-icon.big.paint {
-	background-image: url(images/paintbrush.png);
+.room-block .wb-block .tools .om-icon.big::before {
+	padding-left: 5px;
 }
-.room-block .wb-block .tools .om-icon.big.pointer {
-	background-image: url(images/pointer.png);
+.room-block .wb-block .tools .om-icon.big.paint::before {
+	content: '\f304'
 }
-.room-block .wb-block .tools .om-icon.big.apointer {
-	background-image: url(images/wbpointer.png);
+.room-block .wb-block .tools .om-icon.big.pointer::before {
+	content: '\f245';
 }
-.room-block .wb-block .tools .om-icon.big.line {
-	background-image: url(images/line.png);
+.room-block .wb-block .tools .om-icon.big.apointer::before {
+	content: '\f3c5';
 }
-.room-block .wb-block .tools .om-icon.big.uline {
-	background-image: url(images/uline.png);
+.room-block .wb-block .tools .om-icon.big.line::before {
+	content: '\f715';
 }
-.room-block .wb-block .tools .om-icon.big.rect {
-	background-image: url(images/rectangle.png);
+.room-block .wb-block .tools .om-icon.big.uline::before {
+	content: '\f591'
 }
-.room-block .wb-block .tools .om-icon.big.ellipse {
-	background-image: url(images/ellipse.png);
+.room-block .wb-block .tools .om-icon.big.rect::before {
+	content: '\f5cb'
 }
-.room-block .wb-block .tools .om-icon.big.text {
-	background-image: url(images/font.png);
+.room-block .wb-block .tools .om-icon.big.ellipse div {
+	width: 30px;
+	height: 30px;
+	display: inline-block;
+	border-radius: 50%;
+	margin: 2px;
+	background-color: var(--secondary);
 }
-.room-block .wb-block .tools .om-icon.big.arrow {
-	background-image: url(images/arrow.png);
+.room-block .wb-block .tools .om-icon.big.text::before {
+	content: 'T';
 }
-.room-block .wb-block .tools .om-icon.big.eraser {
-	background-image: url(images/clear-icon.png);
+.room-block .wb-block .tools .om-icon.big.arrow::before {
+	content: '\f30b';
 }
-.room-block .wb-block .tools .om-icon.big.clear-all {
-	background-image: url(images/cancel.png);
+.room-block .wb-block .tools .om-icon.big.eraser::before {
+	content: '\f12d';
 }
-.room-block .wb-block .tools .om-icon.big.clear-slide {
-	background-image: url(images/page_delete.png);
+.room-block .wb-block .tools .om-icon.big.clear-all::before {
+	content: '\f2ed';
 }
-.room-block .wb-block .tools .om-icon.big.save {
-	background-image: url(images/file_save_as.png);
+.room-block .wb-block .tools .om-icon.big.clear-slide::before {
+	content: '\f1c3';
 }
-.room-block .wb-block .tools .om-icon.big.undo {
-	background-image: url(images/arrow_undo.png);
+.room-block .wb-block .tools .om-icon.big.save::before {
+	content: '\f0c7';
 }
-.room-block .wb-block .tools .om-icon.big.math {
-	background-image: url(images/math.png);
+.room-block .wb-block .tools .om-icon.big.undo::before {
+	content: '\f0e2';
+}
+.room-block .wb-block .tools .om-icon.big.math::before {
+	content: '\f534';
 }
 .room-block .wb-block .tools .om-icon.big.textbox {
 	background-image: url(images/textbox.png);
 }
-.room-block .wb-block .om-icon.big.next {
-	background-image: url(images/next.png);
+.room-block .wb-block .om-icon.big.next::before {
+	content: '\f054';
 }
-.room-block .wb-block .om-icon.big.prev {
-	background-image: url(images/prev.png);
+.room-block .wb-block .om-icon.big.prev::before {
+	content: '\f053';
 }
 .wb-tool-settings, .wb-formula {
 	position: absolute;
@@ -293,48 +296,36 @@ html[dir="rtl"] .room-block .wb-block {
 .wb-tabbar .next {
 	right: 2px;
 }
-.wb-tabbar li button {
-	width: 20px;
-	height: 20px;
-	padding: 0;
-}
-.wb-area .ui-tabs-panel .scroll-container {
-	overflow: auto;
+.room-block .wb-block .tabs .wb-tab-content .wb-with-zoom {
+	width: calc(100% - 40px);
 	height: 100%;
+	display: inline-block;
 }
-.wb-area .ui-tabs-panel .scroll-container .canvas-container {
+.room-block .wb-block .tabs .wb-tab-content .scroll-container {
+	overflow: auto;
+	height: calc(100% - var(--wb-zoom-height));
+}
+.room-block .wb-block .tabs .wb-tab-content .wb-zoom-block {
+	height: var(--wb-zoom-height);
+}
+.room-block .wb-block .tabs .wb-tab-content .tools {
+	width: 35px;
+	height: 100%;
+	display: inline-block;
+	vertical-align: top;
+}
+.room-block .wb-block .tabs .wb-tab-content .scroll-container .canvas-container {
 	margin-top: 5px;
 	margin-left: 5px;
 	border: 1px solid #888888;
 	box-shadow: 5px 5px 5px #888888;
 }
-.wb-area .wb-zoom {
-	display: inline-block;
-	padding: 1px 10px;
-	border-radius: 2px;
-	position: absolute;
-	cursor: default;
-}
-.wb-area .wb-zoom, .wb-area .wb-zoom .btn-group button {
-	background-color: grey;
-	line-height: 12px;
-	font-size: 12px;
-}
-.wb-area .wb-zoom .block {
-	display: inline-block;
-}
-.wb-area .wb-zoom button {
-	width: 28px;
-	height: 20px;
-	background-repeat: no-repeat;
-	background-position: 5px 0px;
-}
 .wb-area .wb-zoom input {
 	width: 50px
 }
-.wb-area .wb-zoom button.down {
-	background-image: url(images/page_down.png);
+.wb-area .wb-zoom .settings-group {
+	display: none;
 }
-.wb-area .wb-zoom button.up {
-	background-image: url(images/page_up.png);
+#wb-rename-menu {
+	display: none;
 }

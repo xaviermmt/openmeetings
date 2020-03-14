@@ -162,22 +162,22 @@ public class LdapLoginManager {
 	 *
 	 * Connection Data is retrieved from ConfigurationFile
 	 *
-	 * @param _login - user login
+	 * @param inLogin - user login
 	 * @param passwd - user password
 	 * @param domainId - user domain id
 	 * @return - {@link User} with this credentials or <code>null</code>
 	 * @throws OmException - in case of any error
 	 */
-	public User login(String _login, String passwd, Long domainId) throws OmException {
+	public User login(String inLogin, String passwd, Long domainId) throws OmException {
 		log.debug("LdapLoginmanager.doLdapLogin");
-		if (!userDao.validLogin(_login)) {
+		if (!userDao.validLogin(inLogin)) {
 			log.error("Invalid login provided");
 			return null;
 		}
 
 		User u = null;
 		try (LdapWorker w = new LdapWorker(domainId)) {
-			String login = w.options.useLowerCase ? _login.toLowerCase(Locale.ROOT) : _login;
+			String login = w.options.useLowerCase ? inLogin.toLowerCase(Locale.ROOT) : inLogin;
 
 			boolean authenticated = true;
 			Dn userDn = null;
@@ -197,7 +197,7 @@ public class LdapLoginManager {
 					authenticated = false;
 					break;
 			}
-			u = authenticated ? userDao.getByLogin(login, Type.ldap, domainId) : userDao.login(login, passwd);
+			u = authenticated ? userDao.getByLogin(login, Type.LDAP, domainId) : userDao.login(login, passwd);
 			log.debug("getByLogin:: authenticated ? {}, login = '{}', domain = {}, user = {}", authenticated, login, domainId, u);
 			if (u == null && Provisionning.AUTOCREATE != w.options.prov) {
 				log.error("User not found in OM DB and Provisionning.AUTOCREATE was not set");
@@ -303,7 +303,7 @@ public class LdapLoginManager {
 		while (cursor.next()) {
 			try {
 				Entry e = cursor.get();
-				User u = userDao.getByLogin(getLogin(w.config, e), Type.ldap, domainId);
+				User u = userDao.getByLogin(getLogin(w.config, e), Type.LDAP, domainId);
 				u = w.getUser(e, u);
 				if (print) {
 					log.info("Going to import user: {}", u);
@@ -340,8 +340,8 @@ public class LdapLoginManager {
 			}
 			if (u == null) {
 				u = getNewUserInstance(null);
-				u.setType(Type.ldap);
-				u.getRights().remove(Right.Login);
+				u.setType(Type.LDAP);
+				u.getRights().remove(Right.LOGIN);
 				u.setDomainId(domainId);
 				Group g = groupDao.get(getDefaultGroup());
 				if (g != null) {
@@ -383,7 +383,7 @@ public class LdapLoginManager {
 				Attribute attr = getAttr(config, entry, CONFIGKEY_LDAP_KEY_GROUP, LDAP_KEY_GROUP);
 				if (attr != null) {
 					for (Value v : attr) {
-						groups.add(new Dn(v.getValue()));
+						groups.add(new Dn(v.getString()));
 					}
 				}
 			} else if (GroupMode.QUERY == options.groupMode) {

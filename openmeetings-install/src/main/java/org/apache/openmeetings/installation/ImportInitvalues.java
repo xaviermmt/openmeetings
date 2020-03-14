@@ -197,7 +197,7 @@ public class ImportInitvalues {
 						, VER_1_9);
 
 		addCfg(list, CONFIG_REGISTER_FRONTEND, String.valueOf(cfg.isAllowFrontendRegister()), Configuration.Type.BOOL
-				, "Is user register available on login screen", VER_1_8);
+				, "Is USER register available on login screen", VER_1_8);
 		addCfg(list, CONFIG_REGISTER_SOAP, String.valueOf(true), Configuration.Type.BOOL, "Is user register available via SOAP/REST", VER_3_0);
 		addCfg(list, CONFIG_REGISTER_OAUTH, String.valueOf(true), Configuration.Type.BOOL, "Is user register available via OAuth", VER_3_0);
 		// this group_id is the Group of users who register through the frontend or SOAP
@@ -381,7 +381,7 @@ public class ImportInitvalues {
 		r.setDemoRoom(false);
 		r.setDemoTime(null);
 
-		r.hide(RoomElement.MicrophoneStatus);
+		r.hide(RoomElement.MICROPHONE_STATUS);
 		r.setModerated(false);
 
 		r.setDeleted(false);
@@ -403,22 +403,22 @@ public class ImportInitvalues {
 
 	public void loadDefaultRooms(boolean createRooms, long langId) {
 		if (createRooms) {
-			createRoom(LabelDao.getString("install.room.public.interview", langId), Type.interview, 16L, true, null);
-			createRoom(LabelDao.getString("install.room.public.conference", langId), Type.conference, 32L, true, null);
-			Room r = createRoom(LabelDao.getString("install.room.public.video.only", langId), Type.conference, 32L, true, null);
-			r.hide(RoomElement.Whiteboard);
+			createRoom(LabelDao.getString("install.room.public.interview", langId), Type.INTERVIEW, 16L, true, null);
+			createRoom(LabelDao.getString("install.room.public.conference", langId), Type.CONFERENCE, 32L, true, null);
+			Room r = createRoom(LabelDao.getString("install.room.public.video.only", langId), Type.CONFERENCE, 32L, true, null);
+			r.hide(RoomElement.WHITEBOARD);
 			roomDao.update(r, null);
-			createRoom(LabelDao.getString("install.room.public.video.wb", langId), Type.conference, 32L, true, null);
-			createRoom(LabelDao.getString("install.room.public.presentation", langId), Type.presentation, 100L, true, null);
-			r = createRoom(LabelDao.getString("install.room.presentation.micro", langId), Type.presentation, 100L, true, null);
+			createRoom(LabelDao.getString("install.room.public.video.wb", langId), Type.CONFERENCE, 32L, true, null);
+			createRoom(LabelDao.getString("install.room.public.presentation", langId), Type.PRESENTATION, 100L, true, null);
+			r = createRoom(LabelDao.getString("install.room.presentation.micro", langId), Type.PRESENTATION, 100L, true, null);
 			r.getHiddenElements().clear();
 			roomDao.update(r, null);
 
-			r = createRoom(LabelDao.getString("install.room.conference.micro", langId), Type.conference, 32L, true, null);
+			r = createRoom(LabelDao.getString("install.room.conference.micro", langId), Type.CONFERENCE, 32L, true, null);
 			r.getHiddenElements().clear();
 			roomDao.update(r, null);
 
-			createRoom(LabelDao.getString("install.room.private.conference", langId), Type.conference, 32L, false, 1L);
+			createRoom(LabelDao.getString("install.room.private.conference", langId), Type.CONFERENCE, 32L, false, 1L);
 		}
 	}
 
@@ -435,9 +435,9 @@ public class ImportInitvalues {
 		cfgDao.update(c, null);
 
 		User u = getNewUserInstance(null);
-		u.setType(User.Type.user);
-		u.getRights().add(Right.Admin);
-		u.getRights().add(Right.Soap);
+		u.setType(User.Type.USER);
+		u.getRights().add(Right.ADMIN);
+		u.getRights().add(Right.SOAP);
 		u.setLogin(cfg.getUsername());
 		u.setFirstname("firstname");
 		u.setLastname("lastname");

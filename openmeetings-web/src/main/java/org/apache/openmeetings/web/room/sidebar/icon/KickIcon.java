@@ -27,7 +27,7 @@ public class KickIcon extends ClientIcon {
 
 	public KickIcon(String id, String uid) {
 		super(id, uid);
-		mainCssClass = "kick ui-icon-closethick ";
+		mainCssClass = "kick ";
 	}
 
 	@Override
@@ -37,7 +37,7 @@ public class KickIcon extends ClientIcon {
 
 	@Override
 	protected boolean isClickable() {
-		return !isSelf() && roomHasRight(Right.moderator) && !hasRight(Right.superModerator);
+		return !isSelf() && roomHasRight(Right.MODERATOR) && !hasRight(Right.SUPER_MODERATOR);
 	}
 
 	@Override
